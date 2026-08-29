@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap');
+
+@theme {
+  --color-brand-primary: #5B21B6;
+  --color-brand-primary-dark: #4C1D95;
+  --color-brand-orange: #F97316;
+  --color-brand-gold: #F59E0B;
+  --color-brand-navy: #101828;
+  --color-brand-cream: #FFF8ED;
+  --color-brand-text: #1F2937;
+  --color-brand-muted: #667085;
+  --color-brand-border: #E5E7EB;
+  --color-brand-success: #16A34A;
+  --color-brand-error: #DC2626;
+
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-tamil: 'Noto Sans Tamil', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-brand-text);
+  background-color: var(--color-brand-cream);
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-heading);
+}
+
+:lang(ta), .font-tamil {
+  font-family: var(--font-tamil);
+}
+
+::selection {
+  background-color: var(--color-brand-gold);
+  color: var(--color-brand-navy);
+}
+
+.container-page {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .container-page { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+.btn-primary {
+  background-color: var(--color-brand-orange);
+  color: white;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.75rem 1.75rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-primary:hover {
+  background-color: #ea6a0e;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: white;
+  font-weight: 600;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  border-radius: 9999px;
+  padding: 0.75rem 1.75rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-secondary:hover {
+  background-color: rgba(255,255,255,0.12);
+}
+
+.card-surface {
+  background: white;
+  border: 1px solid var(--color-brand-border);
+  border-radius: 1rem;
+}
+
+@keyframes spark {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.animate-spark {
+  animation: spark 2.4s ease-in-out infinite;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+.animate-float {
+  animation: floatUp 4s ease-in-out infinite;
+}
