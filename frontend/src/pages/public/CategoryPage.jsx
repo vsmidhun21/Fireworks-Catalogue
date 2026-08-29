@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Search, ShoppingBag } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
@@ -27,7 +28,18 @@ export default function CategoryPage() {
   }, [slug]);
 
   if (notFound) {
-    return <EmptyState icon="🔍" title="Category not found" action={<Link to="/products" className="btn-primary">{t("estimate.browse")}</Link>} />;
+    return (
+      <EmptyState
+        icon={Search}
+        title="Category not found"
+        action={
+          <Link to="/products" className="btn-primary inline-flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4" />
+            <span>{t("estimate.browse")}</span>
+          </Link>
+        }
+      />
+    );
   }
 
   return (

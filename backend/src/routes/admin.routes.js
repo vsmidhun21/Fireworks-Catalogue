@@ -4,9 +4,33 @@ import { ProductRepo } from "../repositories/products.repo.js";
 import { CustomerRepo, EstimateRepo, SettingsRepo } from "../repositories/estimates.repo.js";
 import { ok, fail, slugify } from "../utils/response.js";
 import { requireAdmin } from "../middleware/auth.js";
+import { uploadProductImage } from "../middleware/upload.js";
 
 const router = Router();
 router.use(requireAdmin);
+
+// ---------- Uploads ----------
+router.post("/upload", uploadProductImage.single("image"), (req, res, next) => {
+  try {
+    if (!req.file) {
+      return fail(res, "No image file provided", 400);
+    }
+    const relativeUrl = `/uploads/products/${req.file.filename}`;
+    ok(
+      res,
+      {
+        url: relativeUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+      },
+      "Image uploaded successfully",
+      201
+    );
+  } catch (e) {
+    next(e);
+  }
+});
 
 // ---------- Dashboard ----------
 router.get("/dashboard", (req, res, next) => {

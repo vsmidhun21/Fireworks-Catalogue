@@ -66,6 +66,13 @@ export const AdminProductService = {
   get: (id) => api.get(`/admin/products/${id}`),
   create: (data) => api.post("/admin/products", data),
   update: (id, data) => api.put(`/admin/products/${id}`, data),
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return api.post("/admin/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
   setStatus: (id, isActive) => api.patch(`/admin/products/${id}/status`, { isActive }),
   setFeatured: (id, isFeatured) => api.patch(`/admin/products/${id}/featured`, { isFeatured }),
   remove: (id) => api.delete(`/admin/products/${id}`),

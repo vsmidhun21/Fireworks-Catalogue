@@ -1,20 +1,172 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  Sparkles,
+  Flame,
+  Rocket,
+  Gift,
+  Zap,
+  Disc3,
+  PartyPopper,
+  Layers,
+  ArrowRight,
+  ShieldCheck,
+  Truck,
+  CheckCircle2,
+  Receipt,
+  PhoneCall,
+  ShoppingBag,
+  Star,
+  Award,
+} from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid } from "../../components/common/States";
 
-const CATEGORY_ICONS = {
-  "single-sound-crackers": "💥",
-  "ground-chakkars": "🌀",
-  "flower-pots": "🎇",
-  "rockets": "🚀",
-  "sparklers": "✨",
-  "children-s-special": "🎈",
-  "repeating-shots": "🎆",
-  "gift-boxes": "🎁",
+const CATEGORY_CONFIG = {
+  "single-sound-crackers": {
+    icon: Zap,
+    color: "text-amber-500 bg-amber-500/10 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white",
+  },
+  "ground-chakkars": {
+    icon: Disc3,
+    color: "text-purple-500 bg-purple-500/10 border-purple-500/20 group-hover:bg-purple-500 group-hover:text-white",
+  },
+  "flower-pots": {
+    icon: Sparkles,
+    color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white",
+  },
+  "rockets": {
+    icon: Rocket,
+    color: "text-rose-500 bg-rose-500/10 border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white",
+  },
+  "sparklers": {
+    icon: Flame,
+    color: "text-amber-600 bg-amber-600/10 border-amber-600/20 group-hover:bg-amber-600 group-hover:text-white",
+  },
+  "children-s-special": {
+    icon: PartyPopper,
+    color: "text-pink-500 bg-pink-500/10 border-pink-500/20 group-hover:bg-pink-500 group-hover:text-white",
+  },
+  "repeating-shots": {
+    icon: Layers,
+    color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20 group-hover:bg-cyan-500 group-hover:text-white",
+  },
+  "gift-boxes": {
+    icon: Gift,
+    color: "text-orange-500 bg-orange-500/10 border-orange-500/20 group-hover:bg-orange-500 group-hover:text-white",
+  },
 };
+
+/**
+ * Interactive HTML5 Fireworks Particle Canvas
+ */
+function FireworksCanvas() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animationFrameId;
+
+    let width = (canvas.width = canvas.offsetWidth);
+    let height = (canvas.height = canvas.offsetHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = canvas.offsetWidth;
+      height = canvas.height = canvas.offsetHeight;
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    const particles = [];
+    const colors = ["#F59E0B", "#EF4444", "#EC4899", "#3B82F6", "#10B981", "#8B5CF6", "#FBBF24"];
+
+    function createBurst(x, y, count = 35) {
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1.5;
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color,
+          alpha: 1,
+          size: Math.random() * 2.5 + 1,
+          decay: Math.random() * 0.015 + 0.012,
+        });
+      }
+    }
+
+    let lastAutoBurst = 0;
+
+    function render(time) {
+      ctx.clearRect(0, 0, width, height);
+
+      // Auto fire bursts periodically
+      if (time - lastAutoBurst > 1200) {
+        lastAutoBurst = time;
+        const rx = width * 0.2 + Math.random() * (width * 0.6);
+        const ry = height * 0.2 + Math.random() * (height * 0.5);
+        createBurst(rx, ry, Math.floor(Math.random() * 25 + 25));
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.04; // subtle gravity
+        p.alpha -= p.decay;
+
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    }
+
+    animationFrameId = requestAnimationFrame(render);
+
+    const handleCanvasClick = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      createBurst(x, y, 45);
+    };
+
+    canvas.addEventListener("pointerdown", handleCanvasClick);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (canvas) canvas.removeEventListener("pointerdown", handleCanvasClick);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-auto cursor-crosshair opacity-80"
+    />
+  );
+}
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -32,74 +184,176 @@ export default function Home() {
   }, []);
 
   return (
-    <div>
-      {/* HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-brand-primary-dark to-brand-primary text-white">
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-10 left-10 w-2 h-2 rounded-full bg-brand-gold animate-spark" />
-          <div className="absolute top-24 right-24 w-3 h-3 rounded-full bg-brand-orange animate-spark" style={{ animationDelay: "0.5s" }} />
-          <div className="absolute bottom-16 left-1/3 w-2 h-2 rounded-full bg-white animate-spark" style={{ animationDelay: "1s" }} />
-          <div className="absolute top-1/3 right-1/4 w-2 h-2 rounded-full bg-brand-gold animate-spark" style={{ animationDelay: "1.5s" }} />
-        </div>
+    <div className="overflow-hidden">
+      {/* HERO SECTION */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-brand-navy to-slate-950 text-white min-h-[560px] sm:min-h-[640px] flex items-center">
+        {/* Glow Spheres */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-primary/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-12 right-12 w-64 h-64 bg-rose-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="container-page relative py-16 sm:py-24 grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <span className="inline-block bg-white/10 text-brand-gold text-xs font-semibold tracking-wide uppercase px-3 py-1 rounded-full mb-4">
-              Sivakasi · Tamil Nadu
-            </span>
-            <h1 className="font-display text-3xl sm:text-5xl font-extrabold leading-tight mb-4">
+        {/* Dynamic Celebration Fireworks Canvas */}
+        <FireworksCanvas />
+
+        <div className="container-page relative z-10 py-14 sm:py-20 grid lg:grid-cols-12 gap-12 items-center">
+          {/* Left Column Content */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-amber-400/30 text-brand-gold text-xs font-bold tracking-wide uppercase px-4 py-1.5 rounded-full shadow-lg shadow-amber-500/10">
+              <Sparkles className="w-3.5 h-3.5 text-brand-gold animate-pulse" />
+              <span>Direct Sivakasi Manufacturer · 100% Genuine</span>
+            </div>
+
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.15] tracking-tight">
               {t("home.heroTitle")}
             </h1>
-            <p className="text-white/80 text-base sm:text-lg max-w-lg mb-8">{t("home.heroSubtitle")}</p>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/products" className="btn-primary">
-                {t("home.exploreCrackers")}
+
+            <p className="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed font-light">
+              {t("home.heroSubtitle")}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <Link
+                to="/products"
+                className="btn-primary !py-3.5 !px-8 text-base shadow-lg shadow-brand-primary/30 hover:shadow-brand-primary/50 hover:scale-[1.02] transition-all flex items-center gap-2 group"
+              >
+                <span>{t("home.exploreCrackers")}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/estimate" className="btn-secondary">
-                {t("home.getEstimate")}
+              <Link
+                to="/estimate"
+                className="rounded-full bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white font-semibold px-7 py-3.5 text-base transition-all flex items-center gap-2 shadow-sm"
+              >
+                <Receipt className="w-4 h-4 text-brand-gold" />
+                <span>{t("home.getEstimate")}</span>
               </Link>
             </div>
+
+            {/* Micro Trust Strip */}
+            <div className="pt-6 border-t border-white/10 grid grid-cols-3 gap-3 sm:gap-6 text-xs sm:text-sm text-slate-300">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Green & Safe</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Factory Rates</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>Safe Transport</span>
+              </div>
+            </div>
           </div>
-          <div className="hidden md:flex justify-center animate-float">
-            <div className="text-[160px] leading-none select-none">🎆</div>
+
+          {/* Right Column: Festive Interactive Visual Showcase */}
+          <div className="lg:col-span-5 relative flex justify-center items-center">
+            {/* Center Showcase Card Container */}
+            <div className="relative w-full max-w-sm sm:max-w-md aspect-square rounded-3xl bg-gradient-to-tr from-white/10 via-white/5 to-transparent border border-white/20 backdrop-blur-xl p-6 shadow-2xl flex flex-col justify-between overflow-hidden">
+              {/* Top Mini Badge Card */}
+              <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 shadow-lg flex items-center gap-3 animate-float">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-brand-gold flex items-center justify-center shrink-0 border border-amber-400/30">
+                  <Star className="w-5 h-5 fill-brand-gold" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">Sivakasi Premium Quality</div>
+                  <div className="text-[11px] text-slate-400">Handcrafted festive crackers</div>
+                </div>
+              </div>
+
+              {/* Center Decorative Festive Ring */}
+              <div className="my-auto py-6 text-center relative">
+                <div className="w-28 h-28 mx-auto rounded-full bg-gradient-to-tr from-brand-primary via-brand-orange to-brand-gold p-1 shadow-xl shadow-brand-primary/30 flex items-center justify-center animate-pulse">
+                  <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
+                    <Sparkles className="w-12 h-12 text-brand-gold" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <span className="text-xs uppercase tracking-widest text-brand-gold font-extrabold">Festival Celebrations</span>
+                  <p className="text-sm font-semibold text-white mt-0.5">Click canvas to burst crackers!</p>
+                </div>
+              </div>
+
+              {/* Bottom Mini Badge Card */}
+              <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 shadow-lg flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">Instant Online Estimate</div>
+                  <div className="text-[11px] text-slate-400">Zero advance obligation</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CATEGORIES */}
-      <section className="container-page py-14">
-        <div className="flex items-end justify-between mb-6">
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("home.shopByCategory")}</h2>
+      {/* CATEGORIES SECTION */}
+      <section className="container-page py-16">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Browse Catalogue</span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+              {t("home.shopByCategory")}
+            </h2>
+          </div>
+          <Link to="/products" className="text-sm font-semibold text-brand-primary hover:underline flex items-center gap-1">
+            <span>Explore All</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
+
         {loading ? (
           <LoadingGrid count={8} />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {categories.map((c) => (
-              <Link
-                key={c.id}
-                to={`/categories/${c.slug}`}
-                className="card-surface p-5 flex flex-col items-center text-center gap-2 hover:border-brand-primary hover:shadow-md transition-all"
-              >
-                <span className="text-4xl">{CATEGORY_ICONS[c.slug] || "🎆"}</span>
-                <span className="font-semibold text-brand-navy text-sm">
-                  {i18n.language === "ta" && c.nameTa ? c.nameTa : c.nameEn}
-                </span>
-              </Link>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+            {categories.map((c) => {
+              const cfg = CATEGORY_CONFIG[c.slug] || {
+                icon: Sparkles,
+                color: "text-brand-primary bg-brand-primary/10 border-brand-primary/20 group-hover:bg-brand-primary group-hover:text-white",
+              };
+              const Icon = cfg.icon;
+
+              return (
+                <Link
+                  key={c.id}
+                  to={`/categories/${c.slug}`}
+                  className="card-surface p-6 flex flex-col items-center text-center gap-3 group hover:border-brand-primary hover:shadow-xl hover:-translate-y-1 transition-all rounded-2xl border border-brand-border/80"
+                >
+                  <div
+                    className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-300 ${cfg.color}`}
+                  >
+                    <Icon className="w-7 h-7 transition-transform group-hover:scale-110" />
+                  </div>
+                  <span className="font-bold text-brand-navy text-sm leading-snug group-hover:text-brand-primary transition-colors">
+                    {i18n.language === "ta" && c.nameTa ? c.nameTa : c.nameEn}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* FEATURED PRODUCTS */}
-      <section className="bg-white py-14 border-y border-brand-border">
+      {/* FEATURED PRODUCTS SECTION */}
+      <section className="bg-slate-50 py-16 border-y border-brand-border">
         <div className="container-page">
-          <div className="flex items-end justify-between mb-6">
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("home.featuredProducts")}</h2>
-            <Link to="/products?featured=true" className="text-brand-primary font-semibold hover:underline">
-              {t("home.viewAll")} →
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Handpicked Selections</span>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+                {t("home.featuredProducts")}
+              </h2>
+            </div>
+            <Link
+              to="/products?featured=true"
+              className="text-sm font-semibold text-brand-primary hover:underline flex items-center gap-1"
+            >
+              <span>{t("home.viewAll")}</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+
           {loading ? (
             <LoadingGrid count={4} />
           ) : (
@@ -113,33 +367,57 @@ export default function Home() {
       </section>
 
       {/* HOW ESTIMATES WORK */}
-      <section className="container-page py-14">
-        <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy text-center mb-10">
-          {t("home.howItWorks")}
-        </h2>
+      <section className="container-page py-16">
+        <div className="text-center max-w-xl mx-auto mb-12">
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Simple & Transparent</span>
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+            {t("home.howItWorks")}
+          </h2>
+        </div>
+
         <div className="grid sm:grid-cols-3 gap-6">
-          {[1, 2, 3].map((step) => (
-            <div key={step} className="card-surface p-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-brand-primary text-white font-display font-bold flex items-center justify-center mx-auto mb-4">
+          {[
+            { step: 1, icon: ShoppingBag },
+            { step: 2, icon: Receipt },
+            { step: 3, icon: PhoneCall },
+          ].map(({ step, icon: Icon }) => (
+            <div
+              key={step}
+              className="card-surface p-7 text-center rounded-2xl border border-brand-border/80 shadow-sm relative group hover:shadow-md transition-shadow"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto mb-5 group-hover:bg-brand-primary group-hover:text-white transition-colors">
+                <Icon className="w-7 h-7" />
+              </div>
+              <div className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 text-brand-navy font-bold text-xs flex items-center justify-center">
                 {step}
               </div>
-              <h3 className="font-display font-semibold text-brand-navy mb-2">{t(`home.step${step}Title`)}</h3>
-              <p className="text-sm text-brand-muted">{t(`home.step${step}Desc`)}</p>
+              <h3 className="font-display font-bold text-brand-navy text-lg mb-2">{t(`home.step${step}Title`)}</h3>
+              <p className="text-sm text-brand-muted leading-relaxed">{t(`home.step${step}Desc`)}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* TRUST SECTION */}
-      <section className="bg-brand-navy text-white py-14">
-        <div className="container-page">
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-center mb-10">{t("home.whyChooseUs")}</h2>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="text-center px-4">
-                <div className="text-4xl mb-3">{n === 1 ? "✅" : n === 2 ? "🚚" : "🌟"}</div>
-                <h3 className="font-display font-semibold mb-2">{t(`home.trust${n}`)}</h3>
-                <p className="text-sm text-white/70">{t(`home.trust${n}Desc`)}</p>
+      {/* TRUST / WHY CHOOSE US */}
+      <section className="bg-brand-navy text-white py-16 relative overflow-hidden">
+        <div className="container-page relative z-10">
+          <div className="text-center max-w-xl mx-auto mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Our Commitment</span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold mt-1">{t("home.whyChooseUs")}</h2>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-8">
+            {[
+              { n: 1, icon: ShieldCheck, color: "text-emerald-400 bg-emerald-400/10" },
+              { n: 2, icon: Truck, color: "text-cyan-400 bg-cyan-400/10" },
+              { n: 3, icon: Sparkles, color: "text-amber-400 bg-amber-400/10" },
+            ].map(({ n, icon: Icon, color }) => (
+              <div key={n} className="text-center px-4 space-y-3">
+                <div className={`w-16 h-16 rounded-2xl ${color} flex items-center justify-center mx-auto mb-4 border border-white/10`}>
+                  <Icon className="w-8 h-8" />
+                </div>
+                <h3 className="font-display font-bold text-lg text-white">{t(`home.trust${n}`)}</h3>
+                <p className="text-sm text-white/70 leading-relaxed">{t(`home.trust${n}Desc`)}</p>
               </div>
             ))}
           </div>

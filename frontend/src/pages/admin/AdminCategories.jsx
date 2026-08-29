@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Plus, Pencil, Trash2, Power, Check, X, Loader2, FolderTree } from "lucide-react";
 import { AdminCategoryService } from "../../services/api";
 
 const emptyForm = { nameEn: "", nameTa: "", descriptionEn: "", descriptionTa: "", imageUrl: "", sortOrder: 0 };
@@ -75,90 +76,184 @@ export default function AdminCategories() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-2xl font-bold text-brand-navy">Categories</h1>
-        <button onClick={openCreate} className="btn-primary !py-2 !px-5 text-sm">+ Add Category</button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-brand-navy">Product Categories</h1>
+          <p className="text-sm text-brand-muted">Organize cracker types and classifications</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary !py-2 !px-4 text-sm flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          <span>Add Category</span>
+        </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSave} className="card-surface p-6 mb-6 grid sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSave} className="card-surface p-6 rounded-2xl border-2 border-brand-primary/20 shadow-sm grid sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2 flex items-center justify-between pb-3 border-b border-brand-border">
+            <h2 className="font-display text-lg font-bold text-brand-navy">
+              {editing ? `Edit Category: ${editing.nameEn}` : "Add New Category"}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="p-1 rounded-full text-brand-muted hover:bg-slate-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">English Name *</label>
-            <input required value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2" />
+            <input
+              required
+              placeholder="e.g. Flower Pots"
+              value={form.nameEn}
+              onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
+              className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+            />
           </div>
+
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">Tamil Name</label>
-            <input value={form.nameTa} onChange={(e) => setForm({ ...form, nameTa: e.target.value })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2 font-tamil" />
+            <input
+              placeholder="எ.கா. பூந்தொட்டி"
+              value={form.nameTa}
+              onChange={(e) => setForm({ ...form, nameTa: e.target.value })}
+              className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary font-tamil"
+            />
           </div>
+
           <div className="sm:col-span-2">
             <label className="block text-sm font-semibold text-brand-navy mb-1">Description (English)</label>
-            <textarea rows={2} value={form.descriptionEn} onChange={(e) => setForm({ ...form, descriptionEn: e.target.value })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2" />
+            <textarea
+              rows={2}
+              value={form.descriptionEn}
+              onChange={(e) => setForm({ ...form, descriptionEn: e.target.value })}
+              className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+            />
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-brand-navy mb-1">Image URL</label>
-            <input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2" />
-          </div>
+
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">Sort Order</label>
-            <input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2" />
+            <input
+              type="number"
+              value={form.sortOrder}
+              onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
+              className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+            />
           </div>
+
           {error && <p className="sm:col-span-2 text-sm text-brand-error">{error}</p>}
-          <div className="sm:col-span-2 flex gap-3">
-            <button type="submit" disabled={saving} className="btn-primary !py-2 !px-5 text-sm disabled:opacity-60">
-              {saving ? "Saving..." : editing ? "Update Category" : "Create Category"}
+
+          <div className="sm:col-span-2 flex gap-3 pt-2 border-t border-brand-border">
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary !py-2.5 !px-6 text-sm flex items-center gap-2 disabled:opacity-60"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>{editing ? "Update Category" : "Create Category"}</span>
+                </>
+              )}
             </button>
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-full border border-brand-border px-5 py-2 text-sm font-semibold">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="rounded-full border border-brand-border px-5 py-2 text-sm font-semibold hover:bg-slate-50"
+            >
               Cancel
             </button>
           </div>
         </form>
       )}
 
-      <div className="card-surface overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-brand-muted border-b border-brand-border">
-              <th className="py-3 px-4">Name</th>
-              <th className="py-3 px-4">Slug</th>
-              <th className="py-3 px-4">Sort</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={5} className="py-6 text-center text-brand-muted">Loading...</td></tr>
-            ) : categories.length === 0 ? (
-              <tr><td colSpan={5} className="py-6 text-center text-brand-muted">No categories yet.</td></tr>
-            ) : (
-              categories.map((c) => (
-                <tr key={c.id} className="border-b border-brand-border/60 hover:bg-brand-cream">
-                  <td className="py-2.5 px-4 font-medium text-brand-navy">{c.nameEn}</td>
-                  <td className="py-2.5 px-4 text-brand-muted">{c.slug}</td>
-                  <td className="py-2.5 px-4">{c.sortOrder}</td>
-                  <td className="py-2.5 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${c.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                      {c.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4 space-x-3">
-                    <button onClick={() => openEdit(c)} className="text-brand-primary font-semibold hover:underline">Edit</button>
-                    <button onClick={() => toggleActive(c)} className="text-amber-600 font-semibold hover:underline">
-                      {c.isActive ? "Deactivate" : "Activate"}
-                    </button>
-                    <button onClick={() => handleDelete(c)} className="text-brand-error font-semibold hover:underline">Delete</button>
+      <div className="card-surface overflow-hidden border border-brand-border/80 rounded-2xl shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead>
+              <tr className="bg-slate-50 text-brand-muted border-b border-brand-border uppercase text-[11px] tracking-wider font-semibold">
+                <th className="py-3.5 px-4">Name</th>
+                <th className="py-3.5 px-4">Slug</th>
+                <th className="py-3.5 px-4">Sort</th>
+                <th className="py-3.5 px-4 text-center">Status</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brand-border/60">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-brand-muted">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
+                    <span>Loading categories...</span>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : categories.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-brand-muted">
+                    <FolderTree className="w-8 h-8 mx-auto mb-2 text-brand-border" />
+                    <span>No categories found.</span>
+                  </td>
+                </tr>
+              ) : (
+                categories.map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-brand-navy">
+                      <div>{c.nameEn}</div>
+                      {c.nameTa && <div className="text-xs text-brand-muted font-tamil font-normal">{c.nameTa}</div>}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-xs text-brand-muted">{c.slug}</td>
+                    <td className="py-3 px-4 text-brand-muted">{c.sortOrder}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          c.isActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-slate-100 text-slate-600 border border-slate-200"
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${c.isActive ? "bg-emerald-500" : "bg-slate-400"}`} />
+                        {c.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEdit(c)}
+                          title="Edit Category"
+                          className="p-1.5 rounded-lg text-brand-primary hover:bg-brand-primary/10 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleActive(c)}
+                          title={c.isActive ? "Deactivate Category" : "Activate Category"}
+                          className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+                        >
+                          <Power className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c)}
+                          title="Delete Category"
+                          className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

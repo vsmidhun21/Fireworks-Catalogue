@@ -13,9 +13,18 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
 
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(
   cors({
     origin: (process.env.CORS_ORIGINS || "http://localhost:5173").split(","),
@@ -23,6 +32,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: "1mb" }));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 const generalLimiter = rateLimit({

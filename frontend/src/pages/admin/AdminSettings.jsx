@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Settings, Save, CheckCircle2, Loader2 } from "lucide-react";
 import { AdminSettingsService } from "../../services/api";
 
 const fields = [
@@ -38,12 +39,23 @@ export default function AdminSettings() {
     }
   }
 
-  if (loading) return <p className="text-brand-muted">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="py-12 text-center text-brand-muted">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-brand-primary" />
+        <span>Loading store settings...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="font-display text-2xl font-bold text-brand-navy mb-6">Website Settings</h1>
-      <form onSubmit={handleSave} className="card-surface p-6 space-y-4">
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-brand-navy">Website & Business Settings</h1>
+        <p className="text-sm text-brand-muted">Configure store contact details, addresses, and social links</p>
+      </div>
+
+      <form onSubmit={handleSave} className="card-surface p-6 sm:p-8 space-y-4 rounded-2xl border border-brand-border/80 shadow-sm">
         {fields.map((f) => (
           <div key={f.key}>
             <label className="block text-sm font-semibold text-brand-navy mb-1">{f.label}</label>
@@ -52,21 +64,42 @@ export default function AdminSettings() {
                 rows={2}
                 value={form[f.key] || ""}
                 onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-brand-border px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-primary"
               />
             ) : (
               <input
                 value={form[f.key] || ""}
                 placeholder={f.placeholder}
                 onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-brand-border px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-primary"
               />
             )}
           </div>
         ))}
-        {saved && <p className="text-sm text-brand-success">Settings saved successfully.</p>}
-        <button type="submit" disabled={saving} className="btn-primary !py-2 !px-6 text-sm disabled:opacity-60">
-          {saving ? "Saving..." : "Save Settings"}
+
+        {saved && (
+          <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 text-sm font-medium">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>Settings saved successfully!</span>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="btn-primary !py-2.5 !px-6 text-sm flex items-center gap-2 disabled:opacity-60"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              <span>Save Settings</span>
+            </>
+          )}
         </button>
       </form>
     </div>

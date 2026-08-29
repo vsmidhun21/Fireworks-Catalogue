@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { ArrowLeft, Receipt, Send, Loader2, ShoppingBag } from "lucide-react";
 import { useEstimate } from "../../context/EstimateContext";
 import { EstimateService } from "../../services/api";
 import { EmptyState } from "../../components/common/States";
@@ -20,10 +21,15 @@ export default function CustomerDetails() {
     return (
       <div className="container-page py-16">
         <EmptyState
-          icon="🧾"
+          icon={Receipt}
           title={t("estimate.empty")}
           description={t("estimate.emptyDesc")}
-          action={<Link to="/products" className="btn-primary">{t("estimate.browse")}</Link>}
+          action={
+            <Link to="/products" className="btn-primary inline-flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              <span>{t("estimate.browse")}</span>
+            </Link>
+          }
         />
       </div>
     );
@@ -78,12 +84,13 @@ export default function CustomerDetails() {
 
   return (
     <div className="container-page py-8 sm:py-12 max-w-2xl mx-auto">
-      <Link to="/estimate" className="text-sm text-brand-primary font-semibold hover:underline">
-        ← {t("estimate.backToEstimate")}
+      <Link to="/estimate" className="inline-flex items-center gap-1.5 text-sm text-brand-primary font-semibold hover:underline mb-2">
+        <ArrowLeft className="w-4 h-4" />
+        <span>{t("estimate.backToEstimate")}</span>
       </Link>
-      <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-3 mb-8">{t("estimate.customerDetails")}</h1>
+      <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1 mb-8">{t("estimate.customerDetails")}</h1>
 
-      <form onSubmit={handleSubmit} className="card-surface p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5" noValidate>
+      <form onSubmit={handleSubmit} className="card-surface p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-2xl border border-brand-border shadow-sm" noValidate>
         {fields.map((f) => (
           <div key={f.key} className={f.full ? "sm:col-span-2" : ""}>
             <label className="block text-sm font-semibold text-brand-navy mb-1.5" htmlFor={f.key}>
@@ -117,8 +124,18 @@ export default function CustomerDetails() {
 
         {apiError && <p className="sm:col-span-2 text-sm text-brand-error">{apiError}</p>}
 
-        <button type="submit" disabled={submitting} className="btn-primary sm:col-span-2 disabled:opacity-60">
-          {submitting ? t("estimate.submitting") : t("estimate.submit")}
+        <button type="submit" disabled={submitting} className="btn-primary sm:col-span-2 flex items-center justify-center gap-2 disabled:opacity-60">
+          {submitting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>{t("estimate.submitting")}</span>
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4" />
+              <span>{t("estimate.submit")}</span>
+            </>
+          )}
         </button>
       </form>
     </div>

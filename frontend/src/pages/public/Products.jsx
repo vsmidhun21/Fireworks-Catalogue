@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Search, SlidersHorizontal, Package } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
@@ -45,23 +46,29 @@ export default function Products() {
 
   return (
     <div className="container-page py-8 sm:py-12">
-      <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mb-6">{t("nav.products")}</h1>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("nav.products")}</h1>
+          <p className="text-sm text-brand-muted mt-1">Explore authentic Sivakasi fireworks at factory-direct rates</p>
+        </div>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-8">
         <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted" />
           <input
             type="search"
             defaultValue={search}
             onKeyDown={(e) => e.key === "Enter" && updateParam("search", e.currentTarget.value)}
             onBlur={(e) => updateParam("search", e.currentTarget.value)}
             placeholder={t("product.searchPlaceholder")}
-            className="w-full rounded-full border border-brand-border px-5 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+            className="w-full rounded-full border border-brand-border pl-11 pr-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 bg-white"
           />
         </div>
         <select
           value={category}
           onChange={(e) => updateParam("category", e.target.value)}
-          className="rounded-full border border-brand-border px-4 py-2.5 bg-white"
+          className="rounded-full border border-brand-border px-4 py-2.5 bg-white text-sm focus:outline-none focus:border-brand-primary"
         >
           <option value="">{t("product.allCategories")}</option>
           {categories.map((c) => (
@@ -73,7 +80,7 @@ export default function Products() {
         <select
           value={sort}
           onChange={(e) => updateParam("sort", e.target.value)}
-          className="rounded-full border border-brand-border px-4 py-2.5 bg-white"
+          className="rounded-full border border-brand-border px-4 py-2.5 bg-white text-sm focus:outline-none focus:border-brand-primary"
         >
           <option value="">{t("product.sortDefault")}</option>
           <option value="price_asc">{t("product.sortPriceAsc")}</option>
@@ -104,8 +111,10 @@ export default function Products() {
                     next.set("page", String(i + 1));
                     setSearchParams(next);
                   }}
-                  className={`w-9 h-9 rounded-full font-semibold text-sm ${
-                    page === i + 1 ? "bg-brand-primary text-white" : "bg-white border border-brand-border text-brand-navy"
+                  className={`w-9 h-9 rounded-full font-semibold text-sm transition-all ${
+                    page === i + 1
+                      ? "bg-brand-primary text-white shadow-md shadow-brand-primary/20 scale-105"
+                      : "bg-white border border-brand-border text-brand-navy hover:bg-slate-50"
                   }`}
                 >
                   {i + 1}
