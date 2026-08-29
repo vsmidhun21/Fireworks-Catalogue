@@ -87,6 +87,16 @@ export const ProductRepo = {
   findByCode(code) {
     return rowToProduct(db.prepare("SELECT * FROM products WHERE product_code = ?").get(code));
   },
+  nextProductCode() {
+    const row = db
+      .prepare(
+        `SELECT COALESCE(MAX(CAST(product_code AS INTEGER)), 0) as maxCode
+         FROM products
+         WHERE product_code GLOB '[0-9]*'`
+      )
+      .get();
+    return Number(row?.maxCode || 0) + 1;
+  },
   create(p) {
     const existing = ProductRepo.findByCode(p.productCode);
     if (existing) {
@@ -124,6 +134,14 @@ export const ProductRepo = {
     const current = ProductRepo.findById(id);
     if (!current) return null;
     const merged = { ...current, ...fields };
+    if (merged.productCode !== current.productCode) {
+      const existing = ProductRepo.findByCode(merged.productCode);
+      if (existing && existing.id !== id) {
+        const err = new Error("Product code must be unique");
+        err.status = 409;
+        throw err;
+      }
+    }
     db.prepare(
       `UPDATE products SET category_id=?, product_code=?, name_en=?, name_ta=?, description_en=?, description_ta=?,
        unit=?, original_price=?, discounted_price=?, image_url=?, is_featured=?, is_new_arrival=?, sort_order=?, updated_at=?

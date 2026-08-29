@@ -21,7 +21,6 @@ import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 
 const emptyForm = {
   categoryId: "",
-  productCode: "",
   nameEn: "",
   nameTa: "",
   descriptionEn: "",
@@ -30,6 +29,7 @@ const emptyForm = {
   originalPrice: "",
   discountedPrice: "",
   imageUrl: "",
+  imageFile: null,
   isFeatured: false,
   isNewArrival: false,
   sortOrder: 0,
@@ -44,10 +44,17 @@ export default function AdminProducts() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState("");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const fileInputRef = useRef(null);
+  const nextProductCode = products.reduce((maxCode, product) => {
+    const numericCode = Number(product.productCode);
+    if (!Number.isNaN(numericCode)) {
+      return Math.max(maxCode, numericCode);
+    }
+    return maxCode;
+  }, 0) + 1;
 
   function load() {
     setLoading(true);
@@ -69,6 +76,10 @@ export default function AdminProducts() {
   function openCreate() {
     setEditing(null);
     setForm({ ...emptyForm, categoryId: categories[0]?.id || "" });
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImagePreviewUrl("");
     setError("");
     setShowForm(true);
   }
@@ -77,7 +88,6 @@ export default function AdminProducts() {
     setEditing(p);
     setForm({
       categoryId: p.categoryId,
-      productCode: p.productCode,
       nameEn: p.nameEn,
       nameTa: p.nameTa || "",
       descriptionEn: p.descriptionEn || "",
@@ -86,34 +96,43 @@ export default function AdminProducts() {
       originalPrice: p.originalPrice,
       discountedPrice: p.discountedPrice ?? "",
       imageUrl: p.imageUrl || "",
+      imageFile: null,
       isFeatured: p.isFeatured,
       isNewArrival: p.isNewArrival,
       sortOrder: p.sortOrder,
     });
+    setImagePreviewUrl("");
     setError("");
     setShowForm(true);
   }
 
-  async function handleFileUpload(file) {
-    if (!file) return;
-    setUploading(true);
-    setError("");
-    try {
-      const res = await AdminProductService.uploadImage(file);
-      if (res.data?.url) {
-        setForm((prev) => ({ ...prev, imageUrl: res.data.url }));
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
       }
-    } catch (err) {
-      setError(err.message || "Failed to upload image. Please try again.");
-    } finally {
-      setUploading(false);
+    };
+  }, [imagePreviewUrl]);
+
+  function handleFileSelect(file) {
+    if (!file) return;
+    setError("");
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose a valid image file.");
+      return;
     }
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreviewUrl(previewUrl);
+    setForm((prev) => ({ ...prev, imageFile: file }));
   }
 
   function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (file) {
-      handleFileUpload(file);
+      handleFileSelect(file);
     }
   }
 
@@ -121,7 +140,7 @@ export default function AdminProducts() {
     e.preventDefault();
     const file = e.dataTransfer?.files?.[0];
     if (file && file.type.startsWith("image/")) {
-      handleFileUpload(file);
+      handleFileSelect(file);
     }
   }
 
@@ -135,6 +154,11 @@ export default function AdminProducts() {
       } else {
         await AdminProductService.create(form);
       }
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+      setImagePreviewUrl("");
+      setForm(emptyForm);
       setShowForm(false);
       load();
     } catch (err) {
@@ -210,7 +234,13 @@ export default function AdminProducts() {
             </h2>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                if (imagePreviewUrl) {
+                  URL.revokeObjectURL(imagePreviewUrl);
+                }
+                setImagePreviewUrl("");
+                setShowForm(false);
+              }}
               className="p-1 rounded-full text-brand-muted hover:bg-slate-100"
             >
               <X className="w-5 h-5" />
@@ -235,14 +265,13 @@ export default function AdminProducts() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-brand-navy mb-1">Product Code *</label>
+            <label className="block text-sm font-semibold text-brand-navy mb-1">Product Code</label>
             <input
-              required
-              placeholder="e.g. SK-001"
-              value={form.productCode}
-              onChange={(e) => setForm({ ...form, productCode: e.target.value })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+              value={editing?.productCode ?? nextProductCode}
+              disabled
+              className="w-full rounded-lg border border-brand-border bg-slate-50 px-3 py-2 text-sm text-brand-muted"
             />
+            <p className="mt-1 text-[11px] text-brand-muted">Generated automatically as the next numeric item code.</p>
           </div>
 
           <div>
@@ -334,20 +363,14 @@ export default function AdminProducts() {
               <div className="sm:col-span-3 flex flex-col items-center justify-center">
                 <div className="relative w-28 h-28 rounded-xl border-2 border-dashed border-brand-border overflow-hidden bg-white shadow-sm flex items-center justify-center">
                   <img
-                    src={getProductImageUrl(form.imageUrl)}
+                    src={getProductImageUrl(imagePreviewUrl || form.imageUrl)}
                     alt="Product preview"
                     onError={onImageError}
                     className="w-full h-full object-cover"
                   />
-                  {uploading && (
-                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
-                      <Loader2 className="w-6 h-6 animate-spin mb-1" />
-                      <span className="text-[10px] font-semibold">Uploading...</span>
-                    </div>
-                  )}
                 </div>
                 <span className="text-[11px] text-brand-muted mt-1.5 text-center">
-                  {form.imageUrl ? "Custom Image" : "Default Image in use"}
+                  {imagePreviewUrl ? "Selected image will upload on save" : form.imageUrl ? "Saved image" : "Default Image in use"}
                 </span>
               </div>
 
@@ -372,29 +395,34 @@ export default function AdminProducts() {
                     Click to browse or drag & drop image here
                   </p>
                   <p className="text-[11px] text-brand-muted mt-0.5">
-                    Supports PNG, JPG, WebP, SVG up to 5MB. Stored on server.
+                    Supports PNG, JPG, WebP, SVG up to 5MB. Upload happens when you save the product.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    disabled={uploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-lg bg-brand-navy text-white text-xs font-medium hover:bg-brand-navy/90 flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-lg bg-brand-navy text-white text-xs font-medium hover:bg-brand-navy/90 flex items-center gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{uploading ? "Uploading..." : "Upload New File"}</span>
+                    <span>{imagePreviewUrl ? "Choose Different File" : "Choose Image File"}</span>
                   </button>
 
-                  {form.imageUrl && (
+                  {(form.imageUrl || imagePreviewUrl) && (
                     <button
                       type="button"
-                      onClick={() => setForm({ ...form, imageUrl: "" })}
+                      onClick={() => {
+                        if (imagePreviewUrl) {
+                          URL.revokeObjectURL(imagePreviewUrl);
+                        }
+                        setImagePreviewUrl("");
+                        setForm((prev) => ({ ...prev, imageUrl: "", imageFile: null }));
+                      }}
                       className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 flex items-center gap-1.5"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>Use Default Image</span>
+                      <span>Remove Image</span>
                     </button>
                   )}
                 </div>
@@ -430,7 +458,7 @@ export default function AdminProducts() {
           <div className="sm:col-span-2 flex gap-3 pt-2 border-t border-brand-border">
             <button
               type="submit"
-              disabled={saving || uploading}
+              disabled={saving}
               className="btn-primary !py-2.5 !px-6 text-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving ? (
@@ -447,7 +475,13 @@ export default function AdminProducts() {
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                if (imagePreviewUrl) {
+                  URL.revokeObjectURL(imagePreviewUrl);
+                }
+                setImagePreviewUrl("");
+                setShowForm(false);
+              }}
               className="rounded-full border border-brand-border px-5 py-2 text-sm font-semibold hover:bg-slate-50"
             >
               Cancel

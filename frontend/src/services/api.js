@@ -10,6 +10,9 @@ api.interceptors.request.use((config) => {
   if (token && config.url?.includes("/admin")) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
   return config;
 });
 
@@ -64,19 +67,29 @@ export const AdminCategoryService = {
 export const AdminProductService = {
   list: (params) => api.get("/admin/products", { params }),
   get: (id) => api.get(`/admin/products/${id}`),
-  create: (data) => api.post("/admin/products", data),
-  update: (id, data) => api.put(`/admin/products/${id}`, data),
-  uploadImage: (file) => {
-    const formData = new FormData();
-    formData.append("image", file);
-    return api.post("/admin/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-  },
+  create: (data) => api.post("/admin/products", toProductFormData(data)),
+  update: (id, data) => api.put(`/admin/products/${id}`, toProductFormData(data)),
   setStatus: (id, isActive) => api.patch(`/admin/products/${id}/status`, { isActive }),
   setFeatured: (id, isFeatured) => api.patch(`/admin/products/${id}/featured`, { isFeatured }),
   remove: (id) => api.delete(`/admin/products/${id}`),
 };
+
+function toProductFormData(data) {
+  const formData = new FormData();
+  Object.entries(data || {}).forEach(([key, value]) => {
+    if (value === undefined || key === "imageFile" || key === "image") return;
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+    formData.append(key, value);
+  });
+  const imageFile = data?.imageFile ?? data?.image;
+  if (imageFile instanceof File || imageFile instanceof Blob) {
+    formData.append("image", imageFile);
+  }
+  return formData;
+}
 
 export const AdminEstimateService = {
   list: (params) => api.get("/admin/estimates", { params }),

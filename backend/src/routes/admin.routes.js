@@ -9,6 +9,31 @@ import { uploadProductImage } from "../middleware/upload.js";
 const router = Router();
 router.use(requireAdmin);
 
+function parseBoolean(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value === "true" || value === "1" || value === "on";
+  return false;
+}
+
+function parseNullableText(value) {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") return value ?? null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function parseNullableNumber(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function getUploadedImageUrl(req) {
+  // console.log("req.file:", req.file);
+  return req.file ? `/uploads/products/${req.file.filename}` : undefined;
+}
+
 // ---------- Uploads ----------
 router.post("/upload", uploadProductImage.single("image"), (req, res, next) => {
   try {
@@ -152,27 +177,28 @@ router.get("/products/:id", (req, res, next) => {
   }
 });
 
-router.post("/products", (req, res, next) => {
+router.post("/products", uploadProductImage.single("image"), (req, res, next) => {
   try {
     const b = req.body;
-    if (!b.nameEn || !b.categoryId || !b.productCode || b.originalPrice == null) {
-      return fail(res, "nameEn, categoryId, productCode and originalPrice are required", 422);
+    if (!b.nameEn || !b.categoryId || b.originalPrice == null || b.originalPrice === "") {
+      return fail(res, "nameEn, categoryId and originalPrice are required", 422);
     }
+    const productCode = ProductRepo.nextProductCode();
     const product = ProductRepo.create({
       categoryId: Number(b.categoryId),
-      productCode: b.productCode,
+      productCode,
       nameEn: b.nameEn,
-      nameTa: b.nameTa || null,
+      nameTa: parseNullableText(b.nameTa),
       slug: slugify(b.nameEn) + "-" + Date.now().toString(36),
-      descriptionEn: b.descriptionEn || null,
-      descriptionTa: b.descriptionTa || null,
+      descriptionEn: parseNullableText(b.descriptionEn),
+      descriptionTa: parseNullableText(b.descriptionTa),
       unit: b.unit || "Box",
       originalPrice: Number(b.originalPrice),
-      discountedPrice: b.discountedPrice != null && b.discountedPrice !== "" ? Number(b.discountedPrice) : null,
-      imageUrl: b.imageUrl || null,
-      isFeatured: !!b.isFeatured,
-      isNewArrival: !!b.isNewArrival,
-      sortOrder: b.sortOrder || 0,
+      discountedPrice: parseNullableNumber(b.discountedPrice),
+      imageUrl: getUploadedImageUrl(req) ?? parseNullableText(b.imageUrl) ?? null,
+      isFeatured: parseBoolean(b.isFeatured),
+      isNewArrival: parseBoolean(b.isNewArrival),
+      sortOrder: parseNullableNumber(b.sortOrder) ?? 0,
     });
     ok(res, product, "Product created", 201);
   } catch (e) {
@@ -181,28 +207,31 @@ router.post("/products", (req, res, next) => {
   }
 });
 
-router.put("/products/:id", (req, res, next) => {
+router.put("/products/:id", uploadProductImage.single("image"), (req, res, next) => {
   try {
     const b = req.body;
     const fields = {};
     if (b.categoryId != null) fields.categoryId = Number(b.categoryId);
-    if (b.productCode != null) fields.productCode = b.productCode;
+    if (b.productCode != null && b.productCode !== "") fields.productCode = Number(b.productCode);
     if (b.nameEn != null) fields.nameEn = b.nameEn;
-    if (b.nameTa !== undefined) fields.nameTa = b.nameTa;
-    if (b.descriptionEn !== undefined) fields.descriptionEn = b.descriptionEn;
-    if (b.descriptionTa !== undefined) fields.descriptionTa = b.descriptionTa;
+    if (b.nameTa !== undefined) fields.nameTa = parseNullableText(b.nameTa);
+    if (b.descriptionEn !== undefined) fields.descriptionEn = parseNullableText(b.descriptionEn);
+    if (b.descriptionTa !== undefined) fields.descriptionTa = parseNullableText(b.descriptionTa);
     if (b.unit != null) fields.unit = b.unit;
     if (b.originalPrice != null) fields.originalPrice = Number(b.originalPrice);
-    if (b.discountedPrice !== undefined) fields.discountedPrice = b.discountedPrice === "" ? null : Number(b.discountedPrice);
-    if (b.imageUrl !== undefined) fields.imageUrl = b.imageUrl;
-    if (b.isFeatured !== undefined) fields.isFeatured = !!b.isFeatured;
-    if (b.isNewArrival !== undefined) fields.isNewArrival = !!b.isNewArrival;
-    if (b.sortOrder != null) fields.sortOrder = b.sortOrder;
+    if (b.discountedPrice !== undefined) fields.discountedPrice = parseNullableNumber(b.discountedPrice);
+    if (b.image){
+      fields.imageUrl = getUploadedImageUrl(b.image);
+    }
+    if (b.isFeatured !== undefined) fields.isFeatured = parseBoolean(b.isFeatured);
+    if (b.isNewArrival !== undefined) fields.isNewArrival = parseBoolean(b.isNewArrival);
+    if (b.sortOrder != null) fields.sortOrder = Number(b.sortOrder);
 
     const product = ProductRepo.update(Number(req.params.id), fields);
     if (!product) return fail(res, "Product not found", 404);
     ok(res, product, "Product updated");
   } catch (e) {
+    if (e.status === 409) return fail(res, e.message, 409);
     next(e);
   }
 });
