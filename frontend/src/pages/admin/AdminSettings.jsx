@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Save, CheckCircle2, Loader2 } from "lucide-react";
 import { AdminSettingsService } from "../../services/api";
+import { useSettings } from "../../context/SettingsContext";
 
 const fields = [
   { key: "business_name", label: "Business Name" },
@@ -13,9 +14,11 @@ const fields = [
   { key: "google_maps_url", label: "Google Maps Embed URL" },
   { key: "facebook_url", label: "Facebook URL" },
   { key: "instagram_url", label: "Instagram URL" },
+  { key: "youtube_url", label: "YouTube URL" },
 ];
 
 export default function AdminSettings() {
+  const { updateSettings } = useSettings();
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,6 +36,7 @@ export default function AdminSettings() {
     setSaved(false);
     try {
       await AdminSettingsService.update(form);
+      updateSettings(form);
       setSaved(true);
     } finally {
       setSaving(false);

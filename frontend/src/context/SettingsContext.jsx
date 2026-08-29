@@ -1,21 +1,41 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { SettingsService } from "../services/api";
 
-const SettingsContext = createContext({ settings: {}, loading: true });
+const SettingsContext = createContext({
+  settings: {},
+  loading: true,
+  refreshSettings: async () => {},
+  updateSettings: () => {},
+});
 
 const FALLBACK = {
-  business_name: "Sri RR Crackers",
-  phone_primary: "87540 66248",
-  phone_secondary: "88257 21391",
+  business_name: "RR Crackers",
+  phone_primary: "",
+  phone_secondary: "",
   whatsapp_number: "918754066248",
-  email: "info@srirrcrackers.example",
+  email: "",
   address: "Sivakasi, Tamil Nadu, India",
   business_hours: "Mon - Sun: 9:00 AM - 9:00 PM",
+  google_maps_url: "",
+  facebook_url: "",
+  instagram_url: "",
+  youtube_url: "",
 };
 
 export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(FALLBACK);
   const [loading, setLoading] = useState(true);
+
+  async function refreshSettings() {
+    const res = await SettingsService.public();
+    const next = { ...FALLBACK, ...(res.data || {}) };
+    setSettings(next);
+    return next;
+  }
+
+  function updateSettings(nextValues) {
+    setSettings((current) => ({ ...current, ...nextValues }));
+  }
 
   useEffect(() => {
     SettingsService.public()
@@ -24,7 +44,11 @@ export function SettingsProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  return <SettingsContext.Provider value={{ settings, loading }}>{children}</SettingsContext.Provider>;
+  return (
+    <SettingsContext.Provider value={{ settings, loading, refreshSettings, updateSettings }}>
+      {children}
+    </SettingsContext.Provider>
+  );
 }
 
 export function useSettings() {
