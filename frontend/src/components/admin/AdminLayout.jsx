@@ -6,6 +6,7 @@ import {
   FolderTree,
   Receipt,
   Users,
+  Image,
   Settings,
   LogOut,
   Menu,
@@ -22,6 +23,7 @@ const links = [
   { to: "/admin/categories", label: "Categories", icon: FolderTree },
   { to: "/admin/estimates", label: "Estimates", icon: Receipt },
   { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/promotions", label: "Promotions", icon: Image },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

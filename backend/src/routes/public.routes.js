@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CategoryRepo } from "../repositories/categories.repo.js";
 import { ProductRepo } from "../repositories/products.repo.js";
 import { SettingsRepo } from "../repositories/estimates.repo.js";
+import { PromotionRepo } from "../repositories/promotions.repo.js";
 import { ok, fail } from "../utils/response.js";
 
 const router = Router();
@@ -28,8 +29,8 @@ router.get("/categories/:slug", (req, res, next) => {
 // ---------- Products ----------
 router.get("/products", (req, res, next) => {
   try {
-    const { category, search, featured, sort, page = 1, limit = 20 } = req.query;
-    const take = Math.min(parseInt(limit, 10) || 20, 100);
+    const { category, search, featured, sort, page = 1, limit = 10 } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const { items, total } = ProductRepo.list({
       activeOnly: true,
@@ -59,6 +60,22 @@ router.get("/products/:slug", (req, res, next) => {
     const product = ProductRepo.findBySlug(req.params.slug, { activeOnly: true });
     if (!product) return fail(res, "Product not found", 404);
     ok(res, product);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/promotions", (req, res, next) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const { items, total } = PromotionRepo.list({
+      activeOnly: true,
+      limit: take,
+      offset: (currentPage - 1) * take,
+    });
+    ok(res, { items, total, page: currentPage, limit: take });
   } catch (e) {
     next(e);
   }

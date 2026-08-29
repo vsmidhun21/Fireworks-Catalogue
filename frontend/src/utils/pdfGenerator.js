@@ -1,10 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { CategoryService, ProductService } from "../services/api";
+import { CategoryService, ProductService, SettingsService } from "../services/api";
 
-/**
- * Loads an image from URL into HTMLImageElement or Base64
- */
 function loadImage(url) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -15,49 +12,139 @@ function loadImage(url) {
   });
 }
 
-/**
- * Generates and downloads the Sri RR Crackers Retail Price List PDF
- */
+async function ensureTamilFontReady() {
+  if (!document?.fonts?.load) return;
+  try {
+    await Promise.all([
+      document.fonts.load('600 14px "Noto Sans Tamil"'),
+      document.fonts.load('500 12px "Noto Sans Tamil"'),
+      document.fonts.ready,
+    ]);
+  } catch {
+    // Best effort only. The canvas renderer will still attempt a fallback font.
+  }
+}
+
+const tamilImageCache = new Map();
+
+function createTamilTextImage(text) {
+  if (!text) return null;
+  if (tamilImageCache.has(text)) return tamilImageCache.get(text);
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const fontSize = 24;
+  ctx.font = `600 ${fontSize}px "Noto Sans Tamil", sans-serif`;
+  const width = Math.max(Math.ceil(ctx.measureText(text).width) + 12, 24);
+  const height = 34;
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const drawCtx = canvas.getContext("2d");
+  if (!drawCtx) return null;
+  drawCtx.font = `600 ${fontSize}px "Noto Sans Tamil", sans-serif`;
+  drawCtx.fillStyle = "#1f2937";
+  drawCtx.textBaseline = "middle";
+  drawCtx.fillText(text, 6, height / 2 + 1);
+
+  const image = {
+    dataUrl: canvas.toDataURL("image/png"),
+    width,
+    height,
+  };
+  tamilImageCache.set(text, image);
+  return image;
+}
+
+function formatPrice(value) {
+  return Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function buildTableRows(groups) {
+  const rows = [];
+
+  for (const group of groups) {
+    if (!group.items.length) continue;
+
+    rows.push([
+      {
+        content: `${group.category.nameEn.toUpperCase()}${group.category.nameTa ? ` - ${group.category.nameTa}` : ""}`,
+        colSpan: 7,
+        styles: {
+          fillColor: [255, 237, 213],
+          textColor: [124, 45, 18],
+          fontStyle: "bold",
+          halign: "center",
+          fontSize: 9,
+          cellPadding: 1.8,
+        },
+      },
+    ]);
+
+    group.items.forEach((product) => {
+      rows.push([
+        product.productCode || "-",
+        product.nameEn || "",
+        { content: "", tamilText: product.nameTa || "" },
+        formatPrice(product.originalPrice),
+        product.unit || "Box",
+        formatPrice(product.discountedPrice ?? product.originalPrice),
+        "",
+      ]);
+    });
+  }
+
+  return rows;
+}
+
 export async function downloadPriceListPDF(options = {}) {
   const { onProgress } = options;
 
   if (onProgress) onProgress(true);
 
   try {
-    // 1. Fetch live categories & all products
-    const [catRes, prodRes] = await Promise.all([
+    const currentYear = new Date().getFullYear();
+    await ensureTamilFontReady();
+
+    const [catRes, prodRes, settingsRes, logoImg] = await Promise.all([
       CategoryService.list(),
-      ProductService.list({ limit: 500 }),
+      ProductService.list({ limit: 1000 }),
+      SettingsService.public(),
+      loadImage("/images/logo.png"),
     ]);
 
     const categories = catRes.data || [];
     const products = prodRes.data?.items || [];
+    const settings = settingsRes.data || {};
 
-    // Group products by category
-    const grouped = {};
-    for (const cat of categories) {
-      grouped[cat.id] = {
-        category: cat,
-        items: [],
-      };
+    const categoryIds = new Set(categories.map((category) => category.id));
+    const groupedCategories = categories.map((category) => ({
+      category,
+      items: products
+        .filter((product) => product.categoryId === category.id)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)),
+    }));
+
+    const uncategorized = products.filter((product) => !categoryIds.has(product.categoryId));
+    if (uncategorized.length) {
+      groupedCategories.push({
+        category: { nameEn: "Other Products", nameTa: "" },
+        items: uncategorized,
+      });
     }
 
-    for (const prod of products) {
-      if (grouped[prod.categoryId]) {
-        grouped[prod.categoryId].items.push(prod);
-      } else {
-        const catId = prod.categoryId || "other";
-        if (!grouped[catId]) {
-          grouped[catId] = {
-            category: prod.category || { nameEn: "Other Crackers", nameTa: "" },
-            items: [],
-          };
-        }
-        grouped[catId].items.push(prod);
-      }
-    }
+    const businessName = settings.business_name || "Sri RR Crackers";
+    const phoneNumbers = [settings.phone_primary, settings.phone_secondary, settings.whatsapp_number]
+      .filter(Boolean)
+      .map((phone) => String(phone).trim());
+    const addressLines = [settings.address, settings.business_hours].filter(Boolean);
 
-    // 2. Initialize jsPDF
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -66,195 +153,136 @@ export async function downloadPriceListPDF(options = {}) {
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const tableBody = buildTableRows(groupedCategories);
 
-    // Try loading logo
-    const logoImg = await loadImage("/images/logo.png");
-
-    // Format table body with category headers
-    const tableBody = [];
-
-    for (const catId of Object.keys(grouped)) {
-      const group = grouped[catId];
-      if (!group.items || group.items.length === 0) continue;
-
-      // Category Section Header Row
-      tableBody.push([
-        {
-          content: `${group.category.nameEn.toUpperCase()}${group.category.nameTa ? ` - ${group.category.nameTa}` : ""}`,
-          colSpan: 7,
-          styles: {
-            fillColor: [255, 204, 188], // Peach/Orange accent matching reference PDF
-            textColor: [0, 0, 0],
-            fontStyle: "bold",
-            halign: "center",
-            fontSize: 9,
-            cellPadding: 1.5,
-          },
-        },
-      ]);
-
-      // Category product items
-      group.items.forEach((p) => {
-        const original = Number(p.originalPrice || 0).toLocaleString("en-IN", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-        const discounted = Number(p.discountedPrice ?? p.originalPrice).toLocaleString("en-IN", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-
-        tableBody.push([
-          p.productCode || "-",
-          p.nameEn || "",
-          p.nameTa || "",
-          original,
-          p.unit || "Box",
-          discounted,
-          "", // blank Qty column for customer to fill
-        ]);
-      });
-    }
-
-    // 3. Render autoTable
     autoTable(doc, {
-      startY: 42,
-      margin: { top: 44, left: 8, right: 8, bottom: 12 },
+      startY: 48,
+      margin: { top: 48, left: 8, right: 8, bottom: 14 },
       head: [
         [
           { content: "Code", styles: { halign: "center" } },
-          { content: "Name of the Product", styles: { halign: "left" } },
+          { content: "Product Name", styles: { halign: "left" } },
           { content: "Tamil Name", styles: { halign: "left" } },
-          { content: "Price", styles: { halign: "right" } },
-          { content: "Per", styles: { halign: "center" } },
-          { content: "After Discount", styles: { halign: "right" } },
+          { content: "MRP", styles: { halign: "right" } },
+          { content: "Unit", styles: { halign: "center" } },
+          { content: "Offer Price", styles: { halign: "right" } },
           { content: "Qty", styles: { halign: "center" } },
         ],
       ],
       body: tableBody,
       theme: "grid",
       headStyles: {
-        fillColor: [77, 208, 225], // Cyan title bar matching reference PDF
-        textColor: [0, 0, 0],
+        fillColor: [14, 116, 144],
+        textColor: [255, 255, 255],
         fontStyle: "bold",
         fontSize: 8.5,
-        lineWidth: 0.2,
-        lineColor: [100, 100, 100],
-        cellPadding: 1.8,
+        lineWidth: 0.15,
+        lineColor: [186, 230, 253],
+        cellPadding: 2,
       },
       styles: {
-        fontSize: 7.5,
-        cellPadding: 1.2,
-        lineWidth: 0.15,
-        lineColor: [160, 160, 160],
-        textColor: [20, 20, 20],
+        fontSize: 7.4,
+        cellPadding: 1.5,
+        lineWidth: 0.1,
+        lineColor: [203, 213, 225],
+        textColor: [15, 23, 42],
+        overflow: "linebreak",
+        valign: "middle",
       },
       columnStyles: {
-        0: { cellWidth: 14, halign: "center", fontStyle: "bold" },
-        1: { cellWidth: 50, halign: "left" },
-        2: { cellWidth: 46, halign: "left" },
-        3: { cellWidth: 20, halign: "right" },
-        4: { cellWidth: 16, halign: "center" },
+        0: { cellWidth: 15, halign: "center", fontStyle: "bold" },
+        1: { cellWidth: 49, halign: "left" },
+        2: { cellWidth: 44, halign: "left", minCellHeight: 8 },
+        3: { cellWidth: 18, halign: "right" },
+        4: { cellWidth: 18, halign: "center" },
         5: { cellWidth: 24, halign: "right", fontStyle: "bold" },
         6: { cellWidth: 14, halign: "center" },
       },
       alternateRowStyles: {
-        fillColor: [252, 252, 253],
+        fillColor: [248, 250, 252],
       },
-      didDrawPage: (data) => {
+      didDrawCell: (data) => {
+        if (data.section !== "body" || data.column.index !== 2) return;
+        const tamilText = data.cell.raw?.tamilText;
+        if (!tamilText) return;
+
+        const image = createTamilTextImage(tamilText);
+        if (!image) return;
+
+        const maxWidth = Math.max(data.cell.width - 3, 1);
+        const maxHeight = Math.max(data.cell.height - 2, 1);
+        const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
+        const drawWidth = image.width * scale;
+        const drawHeight = image.height * scale;
+        const x = data.cell.x + 1.5;
+        const y = data.cell.y + (data.cell.height - drawHeight) / 2;
+
+        try {
+          doc.addImage(image.dataUrl, "PNG", x, y, drawWidth, drawHeight);
+        } catch {
+          // Leave the cell blank if embedding fails.
+        }
+      },
+      didDrawPage: () => {
         const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
 
-        // Top Header
-        doc.saveGraphicsState();
+        doc.setFillColor(15, 23, 42);
+        doc.roundedRect(8, 8, pageWidth - 16, 24, 4, 4, "F");
 
-        // 1. Spiritual top line
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(50, 50, 50);
-        doc.text("Sri Sakthi Kaaliamman Thunai", pageWidth / 2, 6, { align: "center" });
-
-        // 2. Logo on the left
         if (logoImg) {
           try {
-            doc.addImage(logoImg, "PNG", 9, 7, 24, 24);
-          } catch (e) {
-            // fallback
+            doc.addImage(logoImg, "PNG", 12, 11, 16, 16);
+          } catch {
+            // Continue with text-only header.
           }
         }
 
-        // 3. Center Business Header
-        doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(15, 34, 61); // Navy brand
-        doc.text("SRI RR CRACKERS", pageWidth / 2 + 2, 12, { align: "center" });
+        doc.setFontSize(15);
+        doc.setTextColor(255, 255, 255);
+        doc.text(businessName.toUpperCase(), 32, 16);
 
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(226, 232, 240);
+        doc.text(`Retail Price List ${currentYear}`, 32, 21);
+        if (addressLines[0]) doc.text(addressLines[0], 32, 25.5);
+        if (addressLines[1]) doc.text(addressLines[1], 32, 29);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(253, 224, 71);
+        doc.text("Factory-direct festive pricing", pageWidth - 12, 15, { align: "right" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(255, 255, 255);
+        phoneNumbers.slice(0, 3).forEach((phone, index) => {
+          doc.text(phone.startsWith("91") ? `+${phone}` : phone, pageWidth - 12, 20 + index * 4, { align: "right" });
+        });
+
+        doc.setFillColor(255, 247, 237);
+        doc.roundedRect(8, 35, pageWidth - 16, 9, 3, 3, "F");
+        doc.setDrawColor(251, 146, 60);
+        doc.setLineWidth(0.3);
+        doc.line(10, 43.5, pageWidth - 10, 43.5);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(154, 52, 18);
+        doc.text("Products, codes, Tamil names, and current offer prices", pageWidth / 2, 40.8, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(80, 80, 80);
-        doc.text("(RETAILER OF SUPERIOR FANCY CRACKERS, SPARKLERS & GIFTBOXES)", pageWidth / 2 + 2, 16, { align: "center" });
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.5);
-        doc.setTextColor(40, 40, 40);
-        doc.text("D.No : 2/557/16, Amman Tower, Southside School (Opp)", pageWidth / 2 + 2, 20, { align: "center" });
-        doc.text("Chinnakamanpatti, Sivakasi - 626 189", pageWidth / 2 + 2, 23.5, { align: "center" });
-
-        // 4. Right side phone numbers & discount badge
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(15, 34, 61);
-        doc.text("Ph: 87540 66248", pageWidth - 10, 10, { align: "right" });
-        doc.text("88257 21391", pageWidth - 10, 14, { align: "right" });
-        doc.text("96006 60788", pageWidth - 10, 18, { align: "right" });
-
-        // 90% DISCOUNT BADGE on right
-        doc.setFillColor(255, 236, 179); // Gold yellow badge
-        doc.setDrawColor(255, 179, 0);
-        doc.roundedRect(pageWidth - 32, 21, 22, 9, 1.5, 1.5, "FD");
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(217, 119, 6);
-        doc.text("90%", pageWidth - 21, 25.5, { align: "center" });
-        doc.setFontSize(5.5);
-        doc.setTextColor(180, 83, 9);
-        doc.text("DISCOUNT", pageWidth - 21, 28.5, { align: "center" });
-
-        // 5. Cyan Retail Price List Subheader Banner
-        doc.setFillColor(77, 208, 225); // Cyan #4DD0E1
-        doc.rect(8, 33, pageWidth - 16, 7, "F");
-        doc.setFontSize(10.5);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0);
-        doc.text("RETAIL PRICE LIST - 2025", pageWidth / 2, 38, { align: "center" });
-
-        // 6. Translucent Watermark in center of page
-        doc.setFontSize(60);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(230, 240, 250);
-        doc.text("RR", pageWidth / 2, pageHeight / 2 + 10, { align: "center", angle: 25 });
-
-        // 7. Footer
-        doc.setFontSize(7.5);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(100, 100, 100);
+        doc.setTextColor(100, 116, 139);
         doc.text(
-          `Sri RR Crackers, Sivakasi · Mobile: +91 87540 66248 · Official Retail Price List 2025`,
+          `${businessName} - Price list generated on ${new Date().toLocaleDateString("en-IN")} - Page ${pageNumber}`,
           8,
-          pageHeight - 5
+          pageHeight - 6
         );
-        doc.text(
-          `Page ${pageNumber}`,
-          pageWidth - 8,
-          pageHeight - 5,
-          { align: "right" }
-        );
-
-        doc.restoreGraphicsState();
       },
     });
 
-    // 4. Save and trigger download
-    doc.save("Sri_RR_Crackers_Price_List_2025.pdf");
+    doc.save(`${businessName.replace(/\s+/g, "_")}_Price_List_${currentYear}.pdf`);
     return true;
   } catch (error) {
     console.error("Failed to generate Price List PDF:", error);

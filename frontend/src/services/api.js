@@ -40,6 +40,10 @@ export const SettingsService = {
   public: () => api.get("/settings/public"),
 };
 
+export const PromotionService = {
+  list: (params) => api.get("/promotions", { params }),
+};
+
 export const EstimateService = {
   submit: (payload) => api.post("/estimates", payload),
   byNumber: (num) => api.get(`/estimates/${num}`),
@@ -57,7 +61,7 @@ export const AdminDashboardService = {
 };
 
 export const AdminCategoryService = {
-  list: () => api.get("/admin/categories"),
+  list: (params) => api.get("/admin/categories", { params }),
   create: (data) => api.post("/admin/categories", data),
   update: (id, data) => api.put(`/admin/categories/${id}`, data),
   setStatus: (id, isActive) => api.patch(`/admin/categories/${id}/status`, { isActive }),
@@ -99,7 +103,7 @@ export const AdminEstimateService = {
 };
 
 export const AdminCustomerService = {
-  list: () => api.get("/admin/customers"),
+  list: (params) => api.get("/admin/customers", { params }),
   get: (id) => api.get(`/admin/customers/${id}`),
 };
 
@@ -107,5 +111,30 @@ export const AdminSettingsService = {
   get: () => api.get("/admin/settings"),
   update: (data) => api.put("/admin/settings", data),
 };
+
+export const AdminPromotionService = {
+  list: (params) => api.get("/admin/promotions", { params }),
+  create: (data) => api.post("/admin/promotions", toPromotionFormData(data)),
+  update: (id, data) => api.put(`/admin/promotions/${id}`, toPromotionFormData(data)),
+  setStatus: (id, isActive) => api.patch(`/admin/promotions/${id}/status`, { isActive }),
+  remove: (id) => api.delete(`/admin/promotions/${id}`),
+};
+
+function toPromotionFormData(data) {
+  const formData = new FormData();
+  Object.entries(data || {}).forEach(([key, value]) => {
+    if (value === undefined || key === "imageFile" || key === "image") return;
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+    formData.append(key, value);
+  });
+  const imageFile = data?.imageFile ?? data?.image;
+  if (imageFile instanceof File || imageFile instanceof Blob) {
+    formData.append("image", imageFile);
+  }
+  return formData;
+}
 
 export default api;

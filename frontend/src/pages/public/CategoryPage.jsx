@@ -5,24 +5,37 @@ import { Search, ShoppingBag } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
+import Pagination from "../../components/common/Pagination";
+
+const PAGE_SIZE = 10;
 
 export default function CategoryPage() {
   const { slug } = useParams();
   const { t, i18n } = useTranslation();
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  function loadProducts(nextPage = 1) {
+    return ProductService.list({ category: slug, page: nextPage, limit: PAGE_SIZE }).then((res) => {
+      setProducts(res?.data?.items || []);
+      setTotal(res?.data?.total || 0);
+      setPage(res?.data?.page || nextPage);
+    });
+  }
 
   useEffect(() => {
     setLoading(true);
     setNotFound(false);
+    setPage(1);
     CategoryService.bySlug(slug)
       .then((res) => {
         setCategory(res.data);
-        return ProductService.list({ category: slug, limit: 24 });
+        return loadProducts(1);
       })
-      .then((res) => setProducts(res?.data?.items || []))
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
@@ -54,15 +67,27 @@ export default function CategoryPage() {
       )}
 
       {loading ? (
-        <LoadingGrid count={8} />
+        <LoadingGrid count={PAGE_SIZE} />
       ) : products.length === 0 ? (
         <EmptyState title={t("product.noResults")} />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={PAGE_SIZE}
+            className="mt-10"
+            onPageChange={(nextPage) => {
+              setLoading(true);
+              loadProducts(nextPage).finally(() => setLoading(false));
+            }}
+          />
+        </>
       )}
     </div>
   );

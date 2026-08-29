@@ -2,9 +2,10 @@ import { Router } from "express";
 import { CategoryRepo } from "../repositories/categories.repo.js";
 import { ProductRepo } from "../repositories/products.repo.js";
 import { CustomerRepo, EstimateRepo, SettingsRepo } from "../repositories/estimates.repo.js";
+import { PromotionRepo } from "../repositories/promotions.repo.js";
 import { ok, fail, slugify } from "../utils/response.js";
 import { requireAdmin } from "../middleware/auth.js";
-import { uploadProductImage } from "../middleware/upload.js";
+import { uploadProductImage, uploadPromotionImage } from "../middleware/upload.js";
 
 const router = Router();
 router.use(requireAdmin);
@@ -84,7 +85,14 @@ router.get("/dashboard", (req, res, next) => {
 // ---------- Categories ----------
 router.get("/categories", (req, res, next) => {
   try {
-    ok(res, CategoryRepo.findAll());
+    const { page = 1, limit = 10 } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const { items, total } = CategoryRepo.list({
+      limit: take,
+      offset: (currentPage - 1) * take,
+    });
+    ok(res, { items, total, page: currentPage, limit: take });
   } catch (e) {
     next(e);
   }
@@ -146,8 +154,8 @@ router.delete("/categories/:id", (req, res, next) => {
 // ---------- Products ----------
 router.get("/products", (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, category } = req.query;
-    const take = Math.min(parseInt(limit, 10) || 20, 100);
+    const { page = 1, limit = 10, search, category } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     let categorySlug;
     if (category) {
@@ -220,8 +228,8 @@ router.put("/products/:id", uploadProductImage.single("image"), (req, res, next)
     if (b.unit != null) fields.unit = b.unit;
     if (b.originalPrice != null) fields.originalPrice = Number(b.originalPrice);
     if (b.discountedPrice !== undefined) fields.discountedPrice = parseNullableNumber(b.discountedPrice);
-    if (b.image){
-      fields.imageUrl = getUploadedImageUrl(b.image);
+    if (req.file) {
+      fields.imageUrl = getUploadedImageUrl(req);
     }
     if (b.isFeatured !== undefined) fields.isFeatured = parseBoolean(b.isFeatured);
     if (b.isNewArrival !== undefined) fields.isNewArrival = parseBoolean(b.isNewArrival);
@@ -270,8 +278,8 @@ router.delete("/products/:id", (req, res, next) => {
 // ---------- Estimates ----------
 router.get("/estimates", (req, res, next) => {
   try {
-    const { status, search, page = 1, limit = 20 } = req.query;
-    const take = Math.min(parseInt(limit, 10) || 20, 100);
+    const { status, search, page = 1, limit = 10 } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const { items, total } = EstimateRepo.list({ status, search, limit: take, offset: (currentPage - 1) * take });
     ok(res, { items, total, page: currentPage, limit: take });
@@ -311,7 +319,88 @@ router.patch("/estimates/:id/notes", (req, res, next) => {
 // ---------- Customers ----------
 router.get("/customers", (req, res, next) => {
   try {
-    ok(res, CustomerRepo.listAll());
+    const { page = 1, limit = 10 } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const { items, total } = CustomerRepo.list({
+      limit: take,
+      offset: (currentPage - 1) * take,
+    });
+    ok(res, { items, total, page: currentPage, limit: take });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- Promotions ----------
+router.get("/promotions", (req, res, next) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const { items, total } = PromotionRepo.list({
+      limit: take,
+      offset: (currentPage - 1) * take,
+    });
+    ok(res, { items, total, page: currentPage, limit: take });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/promotions", uploadPromotionImage.single("image"), (req, res, next) => {
+  try {
+    const b = req.body;
+    if (!b.title) return fail(res, "Promotion title is required", 422);
+    if (!req.file) return fail(res, "Promotion banner image is required", 422);
+    const promotion = PromotionRepo.create({
+      title: b.title,
+      subtitle: parseNullableText(b.subtitle),
+      imageUrl: `/uploads/promotions/${req.file.filename}`,
+      ctaLabel: parseNullableText(b.ctaLabel),
+      ctaUrl: parseNullableText(b.ctaUrl),
+      sortOrder: parseNullableNumber(b.sortOrder) ?? 0,
+      isActive: b.isActive === undefined ? true : parseBoolean(b.isActive),
+    });
+    ok(res, promotion, "Promotion created", 201);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.put("/promotions/:id", uploadPromotionImage.single("image"), (req, res, next) => {
+  try {
+    const b = req.body;
+    const fields = {};
+    if (b.title != null) fields.title = b.title;
+    if (b.subtitle !== undefined) fields.subtitle = parseNullableText(b.subtitle);
+    if (req.file) fields.imageUrl = `/uploads/promotions/${req.file.filename}`;
+    if (b.ctaLabel !== undefined) fields.ctaLabel = parseNullableText(b.ctaLabel);
+    if (b.ctaUrl !== undefined) fields.ctaUrl = parseNullableText(b.ctaUrl);
+    if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
+    if (b.isActive !== undefined) fields.isActive = parseBoolean(b.isActive);
+    const promotion = PromotionRepo.update(Number(req.params.id), fields);
+    if (!promotion) return fail(res, "Promotion not found", 404);
+    ok(res, promotion, "Promotion updated");
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.patch("/promotions/:id/status", (req, res, next) => {
+  try {
+    const promotion = PromotionRepo.setActive(Number(req.params.id), !!req.body.isActive);
+    if (!promotion) return fail(res, "Promotion not found", 404);
+    ok(res, promotion, "Promotion status updated");
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/promotions/:id", (req, res, next) => {
+  try {
+    PromotionRepo.delete(Number(req.params.id));
+    ok(res, null, "Promotion deleted");
   } catch (e) {
     next(e);
   }

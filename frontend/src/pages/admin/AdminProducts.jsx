@@ -18,6 +18,9 @@ import { AdminProductService, AdminCategoryService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
+import Pagination from "../../components/common/Pagination";
+
+const PAGE_SIZE = 10;
 
 const emptyForm = {
   categoryId: "",
@@ -37,6 +40,8 @@ const emptyForm = {
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -48,27 +53,24 @@ export default function AdminProducts() {
   const [error, setError] = useState("");
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const fileInputRef = useRef(null);
-  const nextProductCode = products.reduce((maxCode, product) => {
-    const numericCode = Number(product.productCode);
-    if (!Number.isNaN(numericCode)) {
-      return Math.max(maxCode, numericCode);
-    }
-    return maxCode;
-  }, 0) + 1;
 
-  function load() {
+  function load(nextPage = page) {
     setLoading(true);
-    AdminProductService.list({ search, limit: 50 })
-      .then((res) => setProducts(res.data.items))
+    AdminProductService.list({ search, page: nextPage, limit: PAGE_SIZE })
+      .then((res) => {
+        setProducts(res.data.items);
+        setTotal(res.data.total);
+        setPage(res.data.page);
+      })
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    AdminCategoryService.list().then((res) => setCategories(res.data));
+    AdminCategoryService.list({ page: 1, limit: 1000 }).then((res) => setCategories(res.data.items));
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(load, 300);
+    const timer = setTimeout(() => load(1), 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
@@ -160,7 +162,7 @@ export default function AdminProducts() {
       setImagePreviewUrl("");
       setForm(emptyForm);
       setShowForm(false);
-      load();
+      load(editing ? page : 1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -170,18 +172,19 @@ export default function AdminProducts() {
 
   async function toggleActive(p) {
     await AdminProductService.setStatus(p.id, !p.isActive);
-    load();
+    load(page);
   }
 
   async function toggleFeatured(p) {
     await AdminProductService.setFeatured(p.id, !p.isFeatured);
-    load();
+    load(page);
   }
 
   async function handleDelete(p) {
     if (!confirm(`Delete/archive "${p.nameEn}"?`)) return;
     await AdminProductService.remove(p.id);
-    load();
+    const nextPage = products.length === 1 && page > 1 ? page - 1 : page;
+    load(nextPage);
   }
 
   return (
@@ -267,11 +270,11 @@ export default function AdminProducts() {
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">Product Code</label>
             <input
-              value={editing?.productCode ?? nextProductCode}
+              value={editing?.productCode ?? "Auto-generated on save"}
               disabled
               className="w-full rounded-lg border border-brand-border bg-slate-50 px-3 py-2 text-sm text-brand-muted"
             />
-            <p className="mt-1 text-[11px] text-brand-muted">Generated automatically as the next numeric item code.</p>
+            <p className="mt-1 text-[11px] text-brand-muted">Generated automatically as the next available numeric item code.</p>
           </div>
 
           <div>
@@ -288,7 +291,7 @@ export default function AdminProducts() {
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">Tamil Name</label>
             <input
-              placeholder="எ.கா. குருவி பட்டாசு"
+              placeholder="Enter Tamil product name"
               value={form.nameTa}
               onChange={(e) => setForm({ ...form, nameTa: e.target.value })}
               className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary font-tamil"
@@ -327,7 +330,7 @@ export default function AdminProducts() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-brand-navy mb-1">Original Price (₹) *</label>
+            <label className="block text-sm font-semibold text-brand-navy mb-1">Original Price (Rs.) *</label>
             <input
               required
               type="number"
@@ -340,7 +343,7 @@ export default function AdminProducts() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-brand-navy mb-1">Discounted Price (₹)</label>
+            <label className="block text-sm font-semibold text-brand-navy mb-1">Discounted Price (Rs.)</label>
             <input
               type="number"
               step="0.01"
@@ -606,6 +609,9 @@ export default function AdminProducts() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="px-4 pb-4">
+          <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPageChange={load} />
         </div>
       </div>
     </div>

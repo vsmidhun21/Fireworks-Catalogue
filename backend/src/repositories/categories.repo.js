@@ -18,6 +18,14 @@ function rowToCategory(r) {
 }
 
 export const CategoryRepo = {
+  list({ activeOnly = false, limit = 10, offset = 0 } = {}) {
+    const where = activeOnly ? "WHERE is_active = 1" : "";
+    const total = db.prepare(`SELECT COUNT(*) as c FROM categories ${where}`).get().c;
+    const rows = db
+      .prepare(`SELECT * FROM categories ${where} ORDER BY sort_order ASC, created_at DESC LIMIT ? OFFSET ?`)
+      .all(limit, offset);
+    return { items: rows.map(rowToCategory), total };
+  },
   findAll({ activeOnly = false } = {}) {
     const sql = activeOnly
       ? "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC"

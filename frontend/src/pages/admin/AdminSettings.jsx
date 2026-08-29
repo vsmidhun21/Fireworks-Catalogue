@@ -49,19 +49,20 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-navy">Website & Business Settings</h1>
         <p className="text-sm text-brand-muted">Configure store contact details, addresses, and social links</p>
       </div>
 
-      <form onSubmit={handleSave} className="card-surface p-6 sm:p-8 space-y-4 rounded-2xl border border-brand-border/80 shadow-sm">
+      <form onSubmit={handleSave} className="card-surface rounded-2xl border border-brand-border/80 p-6 shadow-sm sm:p-8">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {fields.map((f) => (
-          <div key={f.key}>
+          <div key={f.key} className={f.textarea ? "md:col-span-2 xl:col-span-3" : ""}>
             <label className="block text-sm font-semibold text-brand-navy mb-1">{f.label}</label>
             {f.textarea ? (
               <textarea
-                rows={2}
+                rows={3}
                 value={form[f.key] || ""}
                 onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
                 className="w-full rounded-xl border border-brand-border px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-primary"
@@ -76,6 +77,7 @@ export default function AdminSettings() {
             )}
           </div>
         ))}
+        </div>
 
         {saved && (
           <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 text-sm font-medium">
@@ -87,7 +89,7 @@ export default function AdminSettings() {
         <button
           type="submit"
           disabled={saving}
-          className="btn-primary !py-2.5 !px-6 text-sm flex items-center gap-2 disabled:opacity-60"
+          className="mt-5 btn-primary !py-2.5 !px-6 text-sm flex items-center gap-2 disabled:opacity-60"
         >
           {saving ? (
             <>

@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { Receipt, Search, Loader2 } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
+import Pagination from "../../components/common/Pagination";
 
 const statuses = ["", "NEW", "CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
+const PAGE_SIZE = 10;
 const statusColors = {
   NEW: "bg-blue-50 text-blue-700 border-blue-200",
   CONTACTED: "bg-amber-50 text-amber-700 border-amber-200",
@@ -15,19 +17,25 @@ const statusColors = {
 
 export default function AdminEstimates() {
   const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
 
-  function load() {
+  function load(nextPage = page) {
     setLoading(true);
-    AdminEstimateService.list({ search, status, limit: 50 })
-      .then((res) => setItems(res.data.items))
+    AdminEstimateService.list({ search, status, page: nextPage, limit: PAGE_SIZE })
+      .then((res) => {
+        setItems(res.data.items);
+        setTotal(res.data.total);
+        setPage(res.data.page);
+      })
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    const timer = setTimeout(load, 300);
+    const timer = setTimeout(() => load(1), 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, status]);
@@ -115,6 +123,9 @@ export default function AdminEstimates() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="px-4 pb-4">
+          <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPageChange={load} />
         </div>
       </div>
     </div>

@@ -61,12 +61,17 @@ export const CustomerRepo = {
   findById(id) {
     return rowToCustomer(db.prepare("SELECT * FROM customers WHERE id = ?").get(id));
   },
-  listAll() {
-    const rows = db.prepare("SELECT * FROM customers ORDER BY created_at DESC").all();
-    return rows.map(rowToCustomer).map((c) => ({
+  list({ limit = 10, offset = 0 } = {}) {
+    const total = db.prepare("SELECT COUNT(*) as c FROM customers").get().c;
+    const rows = db.prepare("SELECT * FROM customers ORDER BY created_at DESC LIMIT ? OFFSET ?").all(limit, offset);
+    const items = rows.map(rowToCustomer).map((c) => ({
       ...c,
       estimateCount: db.prepare("SELECT COUNT(*) as c FROM estimates WHERE customer_id = ?").get(c.id).c,
     }));
+    return { items, total };
+  },
+  listAll() {
+    return CustomerRepo.list({ limit: 100000, offset: 0 }).items;
   },
   findWithEstimates(id) {
     const customer = CustomerRepo.findById(id);

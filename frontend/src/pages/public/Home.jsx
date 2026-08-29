@@ -23,9 +23,10 @@ import {
   Percent,
   Loader2,
 } from "lucide-react";
-import { CategoryService, ProductService } from "../../services/api";
+import { CategoryService, ProductService, PromotionService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid } from "../../components/common/States";
+import { getProductImageUrl, onImageError } from "../../utils/image";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 
 const CATEGORY_CONFIG = {
@@ -187,6 +188,7 @@ export default function Home() {
   const { t, i18n } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
@@ -202,10 +204,11 @@ export default function Home() {
   };
 
   useEffect(() => {
-    Promise.all([CategoryService.list(), ProductService.featured()])
-      .then(([catRes, featRes]) => {
+    Promise.all([CategoryService.list(), ProductService.featured(), PromotionService.list({ limit: 10 })])
+      .then(([catRes, featRes, promotionRes]) => {
         setCategories(catRes.data || []);
         setFeatured(featRes.data || []);
+        setPromotions(promotionRes.data?.items || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -349,6 +352,51 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {promotions.length > 0 && (
+        <section className="container-page py-10">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Festival Promotions</span>
+              <h2 className="mt-1 font-display text-2xl font-bold text-brand-navy">Fresh banners from the admin panel</h2>
+            </div>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            {promotions.slice(0, 4).map((item) => (
+              <div key={item.id} className="overflow-hidden rounded-[28px] border border-brand-border/70 bg-white shadow-lg shadow-slate-200/40">
+                <div className="grid h-full md:grid-cols-[1.2fr_1fr]">
+                  <img
+                    src={getProductImageUrl(item.imageUrl)}
+                    alt={item.title}
+                    onError={onImageError}
+                    className="h-64 w-full object-cover md:h-full"
+                  />
+                  <div className="flex flex-col justify-center gap-4 bg-gradient-to-br from-[#fff7ed] via-white to-[#fff1f2] p-6">
+                    <div className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-primary">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Special Offer</span>
+                    </div>
+                    <div>
+                      <h3 className="font-display text-2xl font-bold text-brand-navy">{item.title}</h3>
+                      {item.subtitle && <p className="mt-2 text-sm leading-relaxed text-brand-muted">{item.subtitle}</p>}
+                    </div>
+                    {item.ctaLabel && item.ctaUrl ? (
+                      <Link
+                        to={item.ctaUrl}
+                        className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-navy px-5 py-3 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
+                      >
+                        <span>{item.ctaLabel}</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* PROMO BANNER: DOWNLOAD COMPLETE PRICE LIST PDF */}
       <section className="bg-gradient-to-r from-amber-500 via-brand-orange to-amber-600 text-slate-950 py-6 px-4 shadow-md">

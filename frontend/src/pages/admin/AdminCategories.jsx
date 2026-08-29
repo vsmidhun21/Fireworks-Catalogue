@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Power, Check, X, Loader2, FolderTree } from "lucide-react";
 import { AdminCategoryService } from "../../services/api";
+import Pagination from "../../components/common/Pagination";
 
 const emptyForm = { nameEn: "", nameTa: "", descriptionEn: "", descriptionTa: "", imageUrl: "", sortOrder: 0 };
+const PAGE_SIZE = 10;
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -13,10 +17,14 @@ export default function AdminCategories() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  function load() {
+  function load(nextPage = page) {
     setLoading(true);
-    AdminCategoryService.list()
-      .then((res) => setCategories(res.data))
+    AdminCategoryService.list({ page: nextPage, limit: PAGE_SIZE })
+      .then((res) => {
+        setCategories(res.data.items);
+        setTotal(res.data.total);
+        setPage(res.data.page);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -56,7 +64,7 @@ export default function AdminCategories() {
         await AdminCategoryService.create(form);
       }
       setShowForm(false);
-      load();
+      load(editing ? page : 1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -66,13 +74,14 @@ export default function AdminCategories() {
 
   async function toggleActive(cat) {
     await AdminCategoryService.setStatus(cat.id, !cat.isActive);
-    load();
+    load(page);
   }
 
   async function handleDelete(cat) {
     if (!confirm(`Delete/archive "${cat.nameEn}"?`)) return;
     await AdminCategoryService.remove(cat.id);
-    load();
+    const nextPage = categories.length === 1 && page > 1 ? page - 1 : page;
+    load(nextPage);
   }
 
   return (
@@ -117,7 +126,7 @@ export default function AdminCategories() {
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">Tamil Name</label>
             <input
-              placeholder="எ.கா. பூந்தொட்டி"
+              placeholder="Enter Tamil category name"
               value={form.nameTa}
               onChange={(e) => setForm({ ...form, nameTa: e.target.value })}
               className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary font-tamil"
@@ -253,6 +262,9 @@ export default function AdminCategories() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="px-4 pb-4">
+          <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPageChange={load} />
         </div>
       </div>
     </div>

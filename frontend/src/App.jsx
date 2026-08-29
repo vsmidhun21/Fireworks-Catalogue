@@ -25,6 +25,7 @@ import AdminEstimates from "./pages/admin/AdminEstimates";
 import AdminEstimateDetail from "./pages/admin/AdminEstimateDetail";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail";
+import AdminPromotions from "./pages/admin/AdminPromotions";
 import AdminSettings from "./pages/admin/AdminSettings";
 
 export default function App() {
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="estimates/:id" element={<AdminEstimateDetail />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
+        <Route path="promotions" element={<AdminPromotions />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
     </Routes>

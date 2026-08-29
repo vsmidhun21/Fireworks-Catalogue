@@ -7,7 +7,7 @@
     "node": ">=22.5.0"
   },
   "scripts": {
-    "dev": "node --no-warnings src/server.js",
+    "dev": "nodemon src/server.js",
     "start": "node --no-warnings src/server.js",
     "seed": "node --no-warnings prisma/seed.js"
   },
@@ -21,5 +21,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

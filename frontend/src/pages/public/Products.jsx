@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, SlidersHorizontal, Package } from "lucide-react";
+import { Search } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
+import Pagination from "../../components/common/Pagination";
+
+const PAGE_SIZE = 10;
 
 export default function Products() {
   const { t, i18n } = useTranslation();
@@ -26,7 +29,7 @@ export default function Products() {
 
   useEffect(() => {
     setLoading(true);
-    ProductService.list({ search, category, featured, sort, page, limit: 12 })
+    ProductService.list({ search, category, featured, sort, page, limit: PAGE_SIZE })
       .then((res) => {
         setProducts(res.data.items);
         setTotal(res.data.total);
@@ -41,8 +44,6 @@ export default function Products() {
     next.delete("page");
     setSearchParams(next);
   }
-
-  const totalPages = Math.max(1, Math.ceil(total / 12));
 
   return (
     <div className="container-page py-8 sm:py-12">
@@ -90,7 +91,7 @@ export default function Products() {
       </div>
 
       {loading ? (
-        <LoadingGrid count={12} />
+        <LoadingGrid count={PAGE_SIZE} />
       ) : products.length === 0 ? (
         <EmptyState title={t("product.noResults")} />
       ) : (
@@ -101,27 +102,17 @@ export default function Products() {
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-10">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    const next = new URLSearchParams(searchParams);
-                    next.set("page", String(i + 1));
-                    setSearchParams(next);
-                  }}
-                  className={`w-9 h-9 rounded-full font-semibold text-sm transition-all ${
-                    page === i + 1
-                      ? "bg-brand-primary text-white shadow-md shadow-brand-primary/20 scale-105"
-                      : "bg-white border border-brand-border text-brand-navy hover:bg-slate-50"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          )}
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={PAGE_SIZE}
+            className="mt-10"
+            onPageChange={(nextPage) => {
+              const next = new URLSearchParams(searchParams);
+              next.set("page", String(nextPage));
+              setSearchParams(next);
+            }}
+          />
         </>
       )}
     </div>

@@ -47,7 +47,7 @@ app.get("/api/v1/health", (req, res) => {
   res.json({ success: true, message: "Sri RR Crackers API is running", data: { time: new Date().toISOString() } });
 });
 
-app.use("/api/v1", publicRoutes);
+app.use("/api/v1/public", publicRoutes);
 app.use("/api/v1", estimateRoutes);
 app.use("/api/v1/admin/auth", adminAuthRoutes);
 app.use("/api/v1/admin", adminRoutes);

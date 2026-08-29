@@ -2,15 +2,30 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Users, Loader2 } from "lucide-react";
 import { AdminCustomerService } from "../../services/api";
+import Pagination from "../../components/common/Pagination";
+
+const PAGE_SIZE = 10;
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    AdminCustomerService.list()
-      .then((res) => setCustomers(res.data))
+  function load(nextPage = page) {
+    setLoading(true);
+    AdminCustomerService.list({ page: nextPage, limit: PAGE_SIZE })
+      .then((res) => {
+        setCustomers(res.data.items);
+        setTotal(res.data.total);
+        setPage(res.data.page);
+      })
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -66,6 +81,9 @@ export default function AdminCustomers() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="px-4 pb-4">
+          <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPageChange={load} />
         </div>
       </div>
     </div>
