@@ -19,10 +19,14 @@ import {
   ShoppingBag,
   Star,
   Award,
+  FileDown,
+  Percent,
+  Loader2,
 } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid } from "../../components/common/States";
+import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 
 const CATEGORY_CONFIG = {
   "single-sound-crackers": {
@@ -45,7 +49,7 @@ const CATEGORY_CONFIG = {
     icon: Flame,
     color: "text-amber-600 bg-amber-600/10 border-amber-600/20 group-hover:bg-amber-600 group-hover:text-white",
   },
-  "children-s-special": {
+  "childrens-special": {
     icon: PartyPopper,
     color: "text-pink-500 bg-pink-500/10 border-pink-500/20 group-hover:bg-pink-500 group-hover:text-white",
   },
@@ -53,9 +57,21 @@ const CATEGORY_CONFIG = {
     icon: Layers,
     color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20 group-hover:bg-cyan-500 group-hover:text-white",
   },
-  "gift-boxes": {
+  "gift-box": {
     icon: Gift,
     color: "text-orange-500 bg-orange-500/10 border-orange-500/20 group-hover:bg-orange-500 group-hover:text-white",
+  },
+  "wala-garlands": {
+    icon: Flame,
+    color: "text-red-500 bg-red-500/10 border-red-500/20 group-hover:bg-red-500 group-hover:text-white",
+  },
+  "bomb": {
+    icon: Zap,
+    color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white",
+  },
+  "combo-pack": {
+    icon: Gift,
+    color: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20 group-hover:bg-yellow-500 group-hover:text-white",
   },
 };
 
@@ -108,19 +124,18 @@ function FireworksCanvas() {
     function render(time) {
       ctx.clearRect(0, 0, width, height);
 
-      // Auto fire bursts periodically
-      if (time - lastAutoBurst > 1200) {
+      if (time - lastAutoBurst > 1100) {
         lastAutoBurst = time;
-        const rx = width * 0.2 + Math.random() * (width * 0.6);
-        const ry = height * 0.2 + Math.random() * (height * 0.5);
-        createBurst(rx, ry, Math.floor(Math.random() * 25 + 25));
+        const rx = width * 0.15 + Math.random() * (width * 0.7);
+        const ry = height * 0.15 + Math.random() * (height * 0.55);
+        createBurst(rx, ry, Math.floor(Math.random() * 30 + 25));
       }
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.04; // subtle gravity
+        p.vy += 0.04;
         p.alpha -= p.decay;
 
         if (p.alpha <= 0) {
@@ -163,7 +178,7 @@ function FireworksCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-auto cursor-crosshair opacity-80"
+      className="absolute inset-0 w-full h-full pointer-events-auto cursor-crosshair opacity-85"
     />
   );
 }
@@ -173,12 +188,24 @@ export default function Home() {
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      await downloadPriceListPDF();
+    } catch (e) {
+      alert("Failed to generate Price List PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     Promise.all([CategoryService.list(), ProductService.featured()])
       .then(([catRes, featRes]) => {
-        setCategories(catRes.data);
-        setFeatured(featRes.data);
+        setCategories(catRes.data || []);
+        setFeatured(featRes.data || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -186,24 +213,31 @@ export default function Home() {
   return (
     <div className="overflow-hidden">
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-brand-navy to-slate-950 text-white min-h-[560px] sm:min-h-[640px] flex items-center">
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-[#0D1527] to-slate-950 text-white min-h-[580px] sm:min-h-[660px] flex items-center">
         {/* Glow Spheres */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-primary/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-12 right-12 w-64 h-64 bg-rose-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-primary/25 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-12 right-12 w-72 h-72 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Dynamic Celebration Fireworks Canvas */}
+        {/* Dynamic Fireworks Canvas */}
         <FireworksCanvas />
 
         <div className="container-page relative z-10 py-14 sm:py-20 grid lg:grid-cols-12 gap-12 items-center">
           {/* Left Column Content */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-amber-400/30 text-brand-gold text-xs font-bold tracking-wide uppercase px-4 py-1.5 rounded-full shadow-lg shadow-amber-500/10">
-              <Sparkles className="w-3.5 h-3.5 text-brand-gold animate-pulse" />
-              <span>Direct Sivakasi Manufacturer · 100% Genuine</span>
+            {/* Top Glowing Badges */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold tracking-wide uppercase px-3.5 py-1.5 rounded-full shadow-lg shadow-amber-500/10">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>DIWALI FESTIVAL SPECIAL 2025</span>
+              </span>
+              <span className="inline-flex items-center gap-1 bg-rose-500/20 border border-rose-400/40 text-rose-300 text-xs font-bold px-3 py-1.5 rounded-full">
+                <Percent className="w-3 h-3 text-rose-400" />
+                <span>UP TO 90% DISCOUNT</span>
+              </span>
             </div>
 
-            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.15] tracking-tight">
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.12] tracking-tight">
               {t("home.heroTitle")}
             </h1>
 
@@ -211,17 +245,32 @@ export default function Home() {
               {t("home.heroSubtitle")}
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            {/* Action Buttons Hub */}
+            <div className="flex flex-wrap items-center gap-3.5 pt-2">
               <Link
                 to="/products"
-                className="btn-primary !py-3.5 !px-8 text-base shadow-lg shadow-brand-primary/30 hover:shadow-brand-primary/50 hover:scale-[1.02] transition-all flex items-center gap-2 group"
+                className="btn-primary !py-3.5 !px-7 text-sm sm:text-base shadow-xl shadow-brand-orange/25 hover:shadow-brand-orange/45 hover:scale-105 transition-all flex items-center gap-2 group cursor-pointer"
               >
                 <span>{t("home.exploreCrackers")}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
+
+              <button
+                onClick={handleDownloadPDF}
+                disabled={downloading}
+                className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold px-6 py-3.5 text-sm sm:text-base transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20 hover:scale-105 cursor-pointer disabled:opacity-60"
+              >
+                {downloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                ) : (
+                  <FileDown className="w-4 h-4 text-slate-950" />
+                )}
+                <span>{downloading ? "Generating..." : "Download Price List"}</span>
+              </button>
+
               <Link
                 to="/estimate"
-                className="rounded-full bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white font-semibold px-7 py-3.5 text-base transition-all flex items-center gap-2 shadow-sm"
+                className="rounded-full bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white font-semibold px-6 py-3.5 text-sm sm:text-base transition-all flex items-center gap-2 shadow-sm"
               >
                 <Receipt className="w-4 h-4 text-brand-gold" />
                 <span>{t("home.getEstimate")}</span>
@@ -232,59 +281,109 @@ export default function Home() {
             <div className="pt-6 border-t border-white/10 grid grid-cols-3 gap-3 sm:gap-6 text-xs sm:text-sm text-slate-300">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Green & Safe</span>
+                <span>100% Genuine Sivakasi</span>
               </div>
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Factory Rates</span>
+                <span>Direct Factory Prices</span>
               </div>
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Safe Transport</span>
+                <span>Safe Pan-India Transport</span>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Festive Interactive Visual Showcase */}
+          {/* Right Column: Festive Showcase */}
           <div className="lg:col-span-5 relative flex justify-center items-center">
-            {/* Center Showcase Card Container */}
             <div className="relative w-full max-w-sm sm:max-w-md aspect-square rounded-3xl bg-gradient-to-tr from-white/10 via-white/5 to-transparent border border-white/20 backdrop-blur-xl p-6 shadow-2xl flex flex-col justify-between overflow-hidden">
               {/* Top Mini Badge Card */}
-              <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 shadow-lg flex items-center gap-3 animate-float">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-brand-gold flex items-center justify-center shrink-0 border border-amber-400/30">
-                  <Star className="w-5 h-5 fill-brand-gold" />
+              <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 shadow-lg flex items-center justify-between animate-float">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-brand-gold flex items-center justify-center shrink-0 border border-amber-400/30">
+                    <Star className="w-5 h-5 fill-brand-gold" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white">Sivakasi Direct Factory</div>
+                    <div className="text-[11px] text-slate-400">Retail & Wholesale Catalogue 2025</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-white">Sivakasi Premium Quality</div>
-                  <div className="text-[11px] text-slate-400">Handcrafted festive crackers</div>
-                </div>
+                <span className="px-2 py-1 rounded bg-amber-400 text-slate-950 font-black text-[10px]">
+                  90% OFF
+                </span>
               </div>
 
-              {/* Center Decorative Festive Ring */}
-              <div className="my-auto py-6 text-center relative">
-                <div className="w-28 h-28 mx-auto rounded-full bg-gradient-to-tr from-brand-primary via-brand-orange to-brand-gold p-1 shadow-xl shadow-brand-primary/30 flex items-center justify-center animate-pulse">
+              {/* Center Emblem */}
+              <div className="my-auto py-4 text-center relative">
+                <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-tr from-brand-primary via-brand-orange to-brand-gold p-1 shadow-2xl shadow-brand-primary/40 flex items-center justify-center animate-pulse">
                   <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
-                    <Sparkles className="w-12 h-12 text-brand-gold" />
+                    <Sparkles className="w-10 h-10 text-brand-gold" />
                   </div>
                 </div>
                 <div className="mt-3">
-                  <span className="text-xs uppercase tracking-widest text-brand-gold font-extrabold">Festival Celebrations</span>
-                  <p className="text-sm font-semibold text-white mt-0.5">Click canvas to burst crackers!</p>
+                  <span className="text-xs uppercase tracking-widest text-brand-gold font-extrabold">Sri RR Crackers</span>
+                  <p className="text-xs font-medium text-slate-300 mt-0.5">Click canvas to burst firecrackers!</p>
                 </div>
               </div>
 
-              {/* Bottom Mini Badge Card */}
-              <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-4 shadow-lg flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
-                  <CheckCircle2 className="w-5 h-5" />
+              {/* Bottom Card with Quick Action */}
+              <div className="bg-slate-900/80 border border-white/10 backdrop-blur-md rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-white">Instant Estimate</div>
+                    <div className="text-[10px] text-slate-400">Zero Advance Obligation</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-white">Instant Online Estimate</div>
-                  <div className="text-[11px] text-slate-400">Zero advance obligation</div>
-                </div>
+                <Link
+                  to="/estimate"
+                  className="text-xs font-bold text-brand-orange hover:text-amber-300 flex items-center gap-1"
+                >
+                  <span>Build</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* PROMO BANNER: DOWNLOAD COMPLETE PRICE LIST PDF */}
+      <section className="bg-gradient-to-r from-amber-500 via-brand-orange to-amber-600 text-slate-950 py-6 px-4 shadow-md">
+        <div className="container-page flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-center md:text-left">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center shrink-0">
+              <FileDown className="w-6 h-6 text-slate-950" />
+            </div>
+            <div>
+              <h3 className="font-display font-extrabold text-base sm:text-lg">
+                Download Official Retail Price List 2025 (PDF)
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-900 font-medium">
+                Complete catalog with product codes, Tamil descriptions, original rates & discounted prices.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleDownloadPDF}
+            disabled={downloading}
+            className="rounded-full bg-slate-950 hover:bg-slate-900 text-white font-bold px-7 py-3 text-sm transition-all shadow-xl hover:scale-105 flex items-center gap-2 shrink-0 cursor-pointer disabled:opacity-70"
+          >
+            {downloading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                <span>Generating PDF...</span>
+              </>
+            ) : (
+              <>
+                <FileDown className="w-4 h-4 text-amber-400" />
+                <span>Download Price List PDF</span>
+              </>
+            )}
+          </button>
         </div>
       </section>
 
@@ -292,13 +391,13 @@ export default function Home() {
       <section className="container-page py-16">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Browse Catalogue</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Explore Products</span>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
               {t("home.shopByCategory")}
             </h2>
           </div>
           <Link to="/products" className="text-sm font-semibold text-brand-primary hover:underline flex items-center gap-1">
-            <span>Explore All</span>
+            <span>Explore All Products</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -306,7 +405,7 @@ export default function Home() {
         {loading ? (
           <LoadingGrid count={8} />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6">
             {categories.map((c) => {
               const cfg = CATEGORY_CONFIG[c.slug] || {
                 icon: Sparkles,
@@ -369,7 +468,7 @@ export default function Home() {
       {/* HOW ESTIMATES WORK */}
       <section className="container-page py-16">
         <div className="text-center max-w-xl mx-auto mb-12">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Simple & Transparent</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Simple 3-Step Process</span>
           <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
             {t("home.howItWorks")}
           </h2>
@@ -402,7 +501,7 @@ export default function Home() {
       <section className="bg-brand-navy text-white py-16 relative overflow-hidden">
         <div className="container-page relative z-10">
           <div className="text-center max-w-xl mx-auto mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Our Commitment</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Why Sri RR Crackers</span>
             <h2 className="font-display text-2xl sm:text-3xl font-bold mt-1">{t("home.whyChooseUs")}</h2>
           </div>
 

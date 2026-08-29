@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Receipt, Search, Filter, Loader2, ArrowRight } from "lucide-react";
+import { Receipt, Search, Loader2 } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
 

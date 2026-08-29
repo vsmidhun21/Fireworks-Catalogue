@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, Save, CheckCircle2, Loader2 } from "lucide-react";
+import { Save, CheckCircle2, Loader2 } from "lucide-react";
 import { AdminSettingsService } from "../../services/api";
 
 const fields = [

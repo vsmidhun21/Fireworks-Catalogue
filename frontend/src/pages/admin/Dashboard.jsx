@@ -10,9 +10,11 @@ import {
   ArrowRight,
   Loader2,
   Receipt,
+  FileDown,
 } from "lucide-react";
 import { AdminDashboardService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
+import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 
 const statusColors = {
   NEW: "bg-blue-50 text-blue-700 border-blue-200",
@@ -25,6 +27,7 @@ const statusColors = {
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     AdminDashboardService.get()
@@ -45,9 +48,27 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-brand-navy">Dashboard Overview</h1>
-        <p className="text-sm text-brand-muted">Real-time stats and customer estimates</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-brand-navy">Dashboard Overview</h1>
+          <p className="text-sm text-brand-muted">Real-time stats and customer estimates</p>
+        </div>
+        <button
+          onClick={() => {
+            setDownloadingPdf(true);
+            downloadPriceListPDF().finally(() => setDownloadingPdf(false));
+          }}
+          disabled={downloadingPdf}
+          className="rounded-full border border-amber-400 bg-amber-50 text-amber-900 px-4 py-2 text-sm font-bold hover:bg-amber-100 transition-colors flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-60"
+          title="Download latest price list PDF"
+        >
+          {downloadingPdf ? (
+            <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+          ) : (
+            <FileDown className="w-4 h-4 text-amber-700" />
+          )}
+          <span>{downloadingPdf ? "Generating..." : "Download Price List PDF"}</span>
+        </button>
       </div>
 
       {loading ? (

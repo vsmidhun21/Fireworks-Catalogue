@@ -12,10 +12,12 @@ import {
   Loader2,
   Power,
   Sparkles,
+  FileDown,
 } from "lucide-react";
 import { AdminProductService, AdminCategoryService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
 import { getProductImageUrl, onImageError } from "../../utils/image";
+import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 
 const emptyForm = {
   categoryId: "",
@@ -43,6 +45,7 @@ export default function AdminProducts() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
 
@@ -165,7 +168,23 @@ export default function AdminProducts() {
           <h1 className="font-display text-2xl font-bold text-brand-navy">Products Management</h1>
           <p className="text-sm text-brand-muted">Manage product catalogue, image uploads, and inventory</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => {
+              setDownloadingPdf(true);
+              downloadPriceListPDF().finally(() => setDownloadingPdf(false));
+            }}
+            disabled={downloadingPdf}
+            className="rounded-full border border-amber-400 bg-amber-50 text-amber-900 px-4 py-2 text-sm font-bold hover:bg-amber-100 transition-colors flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-60"
+            title="Download latest price list PDF"
+          >
+            {downloadingPdf ? (
+              <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+            ) : (
+              <FileDown className="w-4 h-4 text-amber-700" />
+            )}
+            <span>{downloadingPdf ? "Generating..." : "Download Price List PDF"}</span>
+          </button>
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
             <input
