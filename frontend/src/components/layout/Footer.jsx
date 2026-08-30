@@ -21,7 +21,9 @@ export default function Footer() {
           <h4 className="font-display font-semibold text-white mb-3">{t("footer.quickLinks")}</h4>
           <ul className="space-y-2 text-sm text-white/70">
             <li><Link to="/products" className="hover:text-brand-gold">{t("nav.products")}</Link></li>
+            <li><Link to="/gift-boxes" className="hover:text-brand-gold">{t("nav.giftBoxes")}</Link></li>
             <li><Link to="/about" className="hover:text-brand-gold">{t("nav.about")}</Link></li>
+            <li><Link to="/payment" className="hover:text-brand-gold">Payment Information</Link></li>
             <li><Link to="/safety" className="hover:text-brand-gold">{t("nav.safety")}</Link></li>
             <li><Link to="/privacy-policy" className="hover:text-brand-gold">Privacy Policy</Link></li>
             <li><Link to="/terms-and-conditions" className="hover:text-brand-gold">Terms &amp; Conditions</Link></li>

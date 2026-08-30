@@ -2,32 +2,21 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Sparkles, Flame, Rocket, Gift, Zap, Disc3, PartyPopper, Layers,
-  ArrowRight, ShieldCheck, Truck, CheckCircle2, PhoneCall,
-  ShoppingBag, Star, Award, FileDown, Percent, Loader2, MessageCircle,
-  BadgeCheck,
+  Sparkles, ArrowRight, Truck, CheckCircle2, PhoneCall, ShieldCheck,
+  ShoppingBag, Award, FileDown, Percent, Loader2, MessageCircle,
 } from "lucide-react";
 import { CategoryService, ProductService, PromotionService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid } from "../../components/common/States";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 import PromoBannerCarousel from "../../components/common/PromoBannerCarousel";
+import CategoryShowcase from "../../components/common/CategoryShowcase";
+import BrandStory from "../../components/common/BrandStory";
+import WhyChooseUs from "../../components/common/WhyChooseUs";
+import GiftBoxShowcase from "../../components/common/GiftBoxShowcase";
+import SEO from "../../components/common/SEO";
 import { useSettings } from "../../context/SettingsContext";
 import { whatsappLink } from "../../utils/format";
-
-const CATEGORY_CONFIG = {
-  "single-sound-crackers": { icon: Zap, color: "text-amber-500 bg-amber-500/10 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white" },
-  "ground-chakkars": { icon: Disc3, color: "text-purple-500 bg-purple-500/10 border-purple-500/20 group-hover:bg-purple-500 group-hover:text-white" },
-  "flower-pots": { icon: Sparkles, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white" },
-  "rockets": { icon: Rocket, color: "text-rose-500 bg-rose-500/10 border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white" },
-  "sparklers": { icon: Flame, color: "text-amber-600 bg-amber-600/10 border-amber-600/20 group-hover:bg-amber-600 group-hover:text-white" },
-  "childrens-special": { icon: PartyPopper, color: "text-pink-500 bg-pink-500/10 border-pink-500/20 group-hover:bg-pink-500 group-hover:text-white" },
-  "repeating-shots": { icon: Layers, color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20 group-hover:bg-cyan-500 group-hover:text-white" },
-  "gift-box": { icon: Gift, color: "text-orange-500 bg-orange-500/10 border-orange-500/20 group-hover:bg-orange-500 group-hover:text-white" },
-  "wala-garlands": { icon: Flame, color: "text-red-500 bg-red-500/10 border-red-500/20 group-hover:bg-red-500 group-hover:text-white" },
-  "bomb": { icon: Zap, color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white" },
-  "combo-pack": { icon: Gift, color: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20 group-hover:bg-yellow-500 group-hover:text-white" },
-};
 
 /**
  * Full-hero Interactive Fireworks Canvas
@@ -183,6 +172,10 @@ export default function Home() {
 
   return (
     <div className="overflow-hidden">
+      <SEO
+        title="Premium Fireworks for Memorable Celebrations"
+        description={`${businessName} — browse our fireworks catalogue and request an estimate online. No online payment required.`}
+      />
       {/* ── HERO SECTION ── */}
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-[#0D1527] to-slate-950 text-white min-h-[90vh] sm:min-h-[85vh] flex items-center">
         {/* Dot grid texture */}
@@ -307,38 +300,12 @@ export default function Home() {
         {loading ? (
           <LoadingGrid count={8} />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-5">
-            {categories.map((c) => {
-              const cfg = CATEGORY_CONFIG[c.slug] || {
-                icon: Sparkles,
-                color: "text-brand-primary bg-brand-primary/10 border-brand-primary/20 group-hover:bg-brand-primary group-hover:text-white",
-              };
-              const Icon = cfg.icon;
-              return (
-                <Link
-                  key={c.id}
-                  to={`/categories/${c.slug}`}
-                  className="card-surface p-4 sm:p-6 flex flex-col items-center text-center gap-3 group hover:border-brand-primary hover:shadow-xl hover:-translate-y-1 transition-all rounded-2xl border border-brand-border/80"
-                >
-                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border flex items-center justify-center transition-all duration-300 ${cfg.color}`}>
-                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover:scale-110" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-brand-navy text-sm leading-snug group-hover:text-brand-primary transition-colors block">
-                      {c.nameEn}
-                    </span>
-                    {c.nameTa && (
-                      <span className="font-tamil text-xs text-brand-muted mt-0.5 block">
-                        {c.nameTa}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <CategoryShowcase categories={categories} />
         )}
       </section>
+
+      {/* ── GIFT BOX SHOWCASE ── */}
+      <GiftBoxShowcase />
 
       {/* ── FEATURED PRODUCTS ── */}
       <section className="bg-gradient-to-b from-slate-50 to-white py-14 sm:py-16 border-y border-brand-border">
@@ -443,33 +410,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── WHY CHOOSE US (4 cards) ── */}
-      <section className="bg-brand-navy text-white py-14 sm:py-16 relative overflow-hidden">
-        <div className="container-page relative z-10">
-          <div className="text-center max-w-xl mx-auto mb-10">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Why {businessName}</span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold mt-1">{t("home.whyChooseUs")}</h2>
-            <p className="font-tamil text-sm text-white/60 mt-1">எங்களிடம் ஏன் வாங்க வேண்டும்?</p>
-          </div>
+      {/* ── BRAND STORY ── */}
+      <BrandStory />
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-8">
-            {[
-              { n: 1, icon: ShieldCheck, color: "text-emerald-400 bg-emerald-400/10" },
-              { n: 2, icon: Truck, color: "text-cyan-400 bg-cyan-400/10" },
-              { n: 3, icon: Sparkles, color: "text-amber-400 bg-amber-400/10" },
-              { n: 4, icon: BadgeCheck, color: "text-rose-400 bg-rose-400/10" },
-            ].map(({ n, icon: Icon, color }) => (
-              <div key={n} className="text-center px-2 space-y-3">
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${color} flex items-center justify-center mx-auto border border-white/10`}>
-                  <Icon className="w-7 h-7 sm:w-8 sm:h-8" />
-                </div>
-                <h3 className="font-display font-bold text-base sm:text-lg text-white">{t(`home.trust${n}`)}</h3>
-                <p className="text-xs sm:text-sm text-white/70 leading-relaxed">{t(`home.trust${n}Desc`)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── WHY CHOOSE US ── */}
+      <WhyChooseUs />
     </div>
   );
 }

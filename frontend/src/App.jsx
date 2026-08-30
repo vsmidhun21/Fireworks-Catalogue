@@ -5,6 +5,9 @@ import Home from "./pages/public/Home";
 import Products from "./pages/public/Products";
 import ProductDetail from "./pages/public/ProductDetail";
 import CategoryPage from "./pages/public/CategoryPage";
+import GiftBoxes from "./pages/public/GiftBoxes";
+import GiftBoxDetail from "./pages/public/GiftBoxDetail";
+import Payment from "./pages/public/Payment";
 import Estimate from "./pages/public/Estimate";
 import CustomerDetails from "./pages/public/CustomerDetails";
 import Confirmation from "./pages/public/Confirmation";
@@ -37,6 +40,9 @@ export default function App() {
         <Route path="/products" element={<Products />} />
         <Route path="/products/:slug" element={<ProductDetail />} />
         <Route path="/categories/:slug" element={<CategoryPage />} />
+        <Route path="/gift-boxes" element={<GiftBoxes />} />
+        <Route path="/gift-boxes/:slug" element={<GiftBoxDetail />} />
+        <Route path="/payment" element={<Payment />} />
         <Route path="/estimate" element={<Estimate />} />
         <Route path="/estimate/customer-details" element={<CustomerDetails />} />
         <Route path="/estimate/confirmation/:estimateNumber" element={<Confirmation />} />

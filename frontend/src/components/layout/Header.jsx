@@ -11,6 +11,7 @@ import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 const navItems = [
   { to: "/", key: "home" },
   { to: "/products", key: "products" },
+  { to: "/gift-boxes", key: "giftBoxes" },
   { to: "/about", key: "about" },
   { to: "/contact", key: "contact" },
 ];
