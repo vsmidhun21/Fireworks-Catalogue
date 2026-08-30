@@ -5,6 +5,8 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+export const API_BASE_URL = api.defaults.baseURL.replace(/\/api\/v1\/?$/, "");
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("rr_admin_token");
   if (token && config.url?.includes("/admin")) {

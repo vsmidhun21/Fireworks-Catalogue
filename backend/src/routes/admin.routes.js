@@ -32,7 +32,7 @@ function parseNullableNumber(value) {
 
 function getUploadedImageUrl(req) {
   // console.log("req.file:", req.file);
-  return req.file ? `/uploads/products/${req.file.filename}` : undefined;
+  return req.file ? `${req.protocol}://${req.get('host')}/uploads/products/${req.file.filename}` : undefined;
 }
 
 // ---------- Uploads ----------

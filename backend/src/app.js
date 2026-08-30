@@ -33,6 +33,7 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// app.use("/uploads", express.static(UPLOADS_DIR));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 const generalLimiter = rateLimit({
