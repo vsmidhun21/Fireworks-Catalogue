@@ -110,6 +110,11 @@ export const AdminCustomerService = {
 export const AdminSettingsService = {
   get: () => api.get("/admin/settings"),
   update: (data) => api.put("/admin/settings", data),
+  uploadLogo: (file) => {
+    const formData = new FormData();
+    formData.append("logo", file);
+    return api.post("/admin/settings/logo", formData);
+  },
 };
 
 export const AdminPromotionService = {

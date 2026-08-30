@@ -26,8 +26,9 @@ import {
 import { CategoryService, ProductService, PromotionService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid } from "../../components/common/States";
-import { getProductImageUrl, onImageError } from "../../utils/image";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
+import PromoBannerCarousel from "../../components/common/PromoBannerCarousel";
+import { useSettings } from "../../context/SettingsContext";
 
 const CATEGORY_CONFIG = {
   "single-sound-crackers": {
@@ -186,6 +187,8 @@ function FireworksCanvas() {
 
 export default function Home() {
   const { t, i18n } = useTranslation();
+  const { settings } = useSettings();
+  const businessName = settings.business_name || "Sri RR Crackers";
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [promotions, setPromotions] = useState([]);
@@ -217,6 +220,15 @@ export default function Home() {
     <div className="overflow-hidden">
       {/* HERO SECTION */}
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-[#0D1527] to-slate-950 text-white min-h-[580px] sm:min-h-[660px] flex items-center">
+        {/* Subtle festive dot-grid texture so the hero doesn't read as a flat gradient */}
+        <div
+          className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+            backgroundSize: "26px 26px",
+          }}
+        />
+
         {/* Glow Spheres */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-primary/25 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -324,7 +336,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="mt-3">
-                  <span className="text-xs uppercase tracking-widest text-brand-gold font-extrabold">Sri RR Crackers</span>
+                  <span className="text-xs uppercase tracking-widest text-brand-gold font-extrabold">{businessName}</span>
                   <p className="text-xs font-medium text-slate-300 mt-0.5">Click canvas to burst firecrackers!</p>
                 </div>
               </div>
@@ -351,55 +363,24 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Soft wave divider into the next section, so the hero doesn't end on a hard cut */}
+        <svg
+          className="absolute bottom-0 left-0 w-full h-10 sm:h-14 text-brand-cream"
+          viewBox="0 0 1440 60"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path fill="currentColor" d="M0,32 C240,60 480,0 720,16 C960,32 1200,58 1440,28 L1440,60 L0,60 Z" />
+        </svg>
       </section>
 
       {promotions.length > 0 && (
-        <section className="container-page py-10">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Festival Promotions</span>
-              <h2 className="mt-1 font-display text-2xl font-bold text-brand-navy">Fresh banners from the admin panel</h2>
-            </div>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            {promotions.slice(0, 4).map((item) => (
-              <div key={item.id} className="overflow-hidden rounded-[28px] border border-brand-border/70 bg-white shadow-lg shadow-slate-200/40">
-                <div className="grid h-full md:grid-cols-[1.2fr_1fr]">
-                  <img
-                    src={getProductImageUrl(item.imageUrl)}
-                    alt={item.title}
-                    onError={onImageError}
-                    className="h-64 w-full object-cover md:h-full"
-                  />
-                  <div className="flex flex-col justify-center gap-4 bg-gradient-to-br from-[#fff7ed] via-white to-[#fff1f2] p-6">
-                    <div className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-primary">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Special Offer</span>
-                    </div>
-                    <div>
-                      <h3 className="font-display text-2xl font-bold text-brand-navy">{item.title}</h3>
-                      {item.subtitle && <p className="mt-2 text-sm leading-relaxed text-brand-muted">{item.subtitle}</p>}
-                    </div>
-                    {item.ctaLabel && item.ctaUrl ? (
-                      <Link
-                        to={item.ctaUrl}
-                        className="inline-flex w-fit items-center gap-2 rounded-full bg-brand-navy px-5 py-3 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
-                      >
-                        <span>{item.ctaLabel}</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <PromoBannerCarousel items={promotions.slice(0, 8)} />
       )}
 
       {/* PROMO BANNER: DOWNLOAD COMPLETE PRICE LIST PDF */}
-      <section className="bg-gradient-to-r from-amber-500 via-brand-orange to-amber-600 text-slate-950 py-6 px-4 shadow-md">
+      {/*<section className="bg-gradient-to-r from-amber-500 via-brand-orange to-amber-600 text-slate-950 py-6 px-4 shadow-md">
         <div className="container-page flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 text-center md:text-left">
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center shrink-0">
@@ -433,7 +414,7 @@ export default function Home() {
             )}
           </button>
         </div>
-      </section>
+      </section>*}
 
       {/* CATEGORIES SECTION */}
       <section className="container-page py-16">
@@ -549,7 +530,7 @@ export default function Home() {
       <section className="bg-brand-navy text-white py-16 relative overflow-hidden">
         <div className="container-page relative z-10">
           <div className="text-center max-w-xl mx-auto mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Why Sri RR Crackers</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Why {businessName}</span>
             <h2 className="font-display text-2xl sm:text-3xl font-bold mt-1">{t("home.whyChooseUs")}</h2>
           </div>
 

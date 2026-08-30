@@ -5,7 +5,7 @@ import { CustomerRepo, EstimateRepo, SettingsRepo } from "../repositories/estima
 import { PromotionRepo } from "../repositories/promotions.repo.js";
 import { ok, fail, slugify } from "../utils/response.js";
 import { requireAdmin } from "../middleware/auth.js";
-import { uploadProductImage, uploadPromotionImage } from "../middleware/upload.js";
+import { uploadProductImage, uploadPromotionImage, uploadBrandingImage } from "../middleware/upload.js";
 
 const router = Router();
 router.use(requireAdmin);
@@ -428,7 +428,22 @@ router.get("/settings", (req, res, next) => {
 router.put("/settings", (req, res, next) => {
   try {
     SettingsRepo.setMany(req.body || {});
-    ok(res, null, "Settings updated");
+    ok(res, SettingsRepo.getAll(), "Settings updated");
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Branding: logo upload. Storing the URL as a normal website_setting key
+// (logo_url) means the whole app — header, footer, admin panel, PDF export,
+// even the browser tab favicon — updates from this single source of truth
+// the moment it changes, with no code redeploy required.
+router.post("/settings/logo", uploadBrandingImage.single("logo"), (req, res, next) => {
+  try {
+    if (!req.file) return fail(res, "Logo image is required", 422);
+    const logoUrl = `/uploads/branding/${req.file.filename}`;
+    SettingsRepo.setMany({ logo_url: logoUrl });
+    ok(res, { logo_url: logoUrl }, "Logo updated");
   } catch (e) {
     next(e);
   }

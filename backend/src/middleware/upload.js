@@ -49,3 +49,4 @@ const fileFilter = (_req, file, cb) => {
 
 export const uploadProductImage = createImageUploader({ folder: "products", filePrefix: "product" });
 export const uploadPromotionImage = createImageUploader({ folder: "promotions", filePrefix: "promotion" });
+export const uploadBrandingImage = createImageUploader({ folder: "branding", filePrefix: "brand" });
