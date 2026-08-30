@@ -1,15 +1,18 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, Star } from "lucide-react";
+import { Plus, Minus, Check, Star } from "lucide-react";
 import { formatCurrency, discountPercent } from "../../utils/format";
 import { useEstimate } from "../../context/EstimateContext";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 
 export default function ProductCard({ product }) {
   const { t, i18n } = useTranslation();
-  const { addItem } = useEstimate();
+  const { addItem, updateQuantity, removeItem, items } = useEstimate();
   const pct = discountPercent(product.originalPrice, product.discountedPrice);
   const name = i18n.language === "ta" && product.nameTa ? product.nameTa : product.nameEn;
+
+  const orderItem = items.find((i) => i.productId === product.id);
+  const qty = orderItem?.quantity || 0;
 
   return (
     <div className="card-surface overflow-hidden group flex flex-col h-full hover:shadow-lg hover:shadow-brand-primary/10 transition-all duration-300 rounded-2xl border border-brand-border/80">
@@ -56,13 +59,45 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        <button
-          onClick={() => addItem(product, 1)}
-          className="mt-4 w-full rounded-full bg-brand-primary text-white text-sm font-semibold py-2.5 hover:bg-brand-primary-dark transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t("product.addToEstimate")}</span>
-        </button>
+        {/* Add / Quantity Controls */}
+        <div className="mt-4">
+          {qty === 0 ? (
+            <button
+              onClick={() => addItem(product, 1)}
+              className="w-full rounded-full bg-brand-primary text-white text-sm font-semibold py-2.5 hover:bg-brand-primary-dark transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t("product.addToOrder")}</span>
+            </button>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center border-2 border-brand-primary rounded-full bg-white overflow-hidden">
+                <button
+                  onClick={() => {
+                    if (qty <= 1) removeItem(product.id);
+                    else updateQuantity(product.id, qty - 1);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-l-full transition-colors font-bold"
+                  aria-label="Decrease"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="w-8 text-center text-sm font-bold text-brand-primary">{qty}</span>
+                <button
+                  onClick={() => updateQuantity(product.id, qty + 1)}
+                  className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-r-full transition-colors font-bold"
+                  aria-label="Increase"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                <Check className="w-3.5 h-3.5" />
+                {t("product.inOrder")}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

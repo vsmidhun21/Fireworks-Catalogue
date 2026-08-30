@@ -50,8 +50,7 @@ export default function Header() {
               to={item.to}
               end={item.to === "/"}
               className={({ isActive }) =>
-                `transition-colors hover:text-brand-orange text-sm font-semibold ${isActive ? "text-brand-orange" : "text-brand-navy"
-                }`
+                `transition-colors hover:text-brand-orange text-sm font-semibold ${isActive ? "text-brand-orange" : "text-brand-navy"}`
               }
             >
               {t(`nav.${item.key}`)}
@@ -60,7 +59,7 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Download Price List Button */}
+          {/* Download Price List Button - desktop only */}
           <button
             onClick={handleDownloadPDF}
             disabled={downloading}
@@ -72,19 +71,20 @@ export default function Header() {
             ) : (
               <FileDown className="w-3.5 h-3.5 text-amber-700" />
             )}
-            <span>{downloading ? "Generating..." : "Price List PDF"}</span>
+            <span>{downloading ? "Generating..." : "Price List"}</span>
           </button>
 
           <div className="hidden sm:block">
             <LanguageSwitcher />
           </div>
 
+          {/* Order Now CTA — always visible */}
           <Link
             to="/estimate"
-            className="relative flex items-center gap-2 rounded-full bg-brand-primary text-white px-3.5 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-brand-primary-dark transition-all shadow-sm"
+            className="relative flex items-center gap-2 rounded-full bg-brand-primary text-white px-3.5 py-2 sm:px-5 sm:py-2.5 font-bold text-xs sm:text-sm hover:bg-brand-primary-dark transition-all shadow-sm hover:scale-105 hover:shadow-brand-primary/30 hover:shadow-lg"
           >
-            <ShoppingCart className="w-4 h-4" />
-            <span className="hidden sm:inline">{t("estimate.title")}</span>
+            <ShoppingCart className="w-4 h-4 shrink-0" />
+            <span>{t("nav.orderNow")}</span>
             {totals.count > 0 && (
               <span className="bg-brand-orange text-white text-[11px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center -ml-1">
                 {totals.count}
@@ -131,8 +131,17 @@ export default function Header() {
               <span>{downloading ? "Generating Price List..." : "Download Price List (PDF)"}</span>
             </button>
 
+            <Link
+              to="/estimate"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand-primary text-white font-bold text-sm"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>{t("nav.orderNow")}{totals.count > 0 ? ` (${totals.count})` : ""}</span>
+            </Link>
+
             <div className="pt-2 border-t border-brand-border flex items-center justify-between">
-              <span className="text-xs text-brand-muted">Language:</span>
+              <span className="text-xs text-brand-muted">Language / மொழி:</span>
               <LanguageSwitcher />
             </div>
           </nav>

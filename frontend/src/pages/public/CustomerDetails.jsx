@@ -1,39 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Receipt, Send, Loader2, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Send, Loader2, ShoppingCart } from "lucide-react";
 import { useEstimate } from "../../context/EstimateContext";
 import { EstimateService } from "../../services/api";
-import { EmptyState } from "../../components/common/States";
 
 const initialForm = { name: "", phone: "", email: "", address: "", city: "", state: "", pincode: "", notes: "" };
 
 export default function CustomerDetails() {
   const { t } = useTranslation();
-  const { items, clear } = useEstimate();
+  const { items, totals, clear } = useEstimate();
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  if (items.length === 0) {
-    return (
-      <div className="container-page py-16">
-        <EmptyState
-          icon={Receipt}
-          title={t("estimate.empty")}
-          description={t("estimate.emptyDesc")}
-          action={
-            <Link to="/products" className="btn-primary inline-flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" />
-              <span>{t("estimate.browse")}</span>
-            </Link>
-          }
-        />
-      </div>
-    );
-  }
+  // Redirect to products if no items
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate("/products", { replace: true });
+    }
+  }, [items.length, navigate]);
+
+  if (items.length === 0) return null;
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -83,12 +73,21 @@ export default function CustomerDetails() {
   ];
 
   return (
-    <div className="container-page py-8 sm:py-12 max-w-2xl mx-auto">
+    <div className="container-page py-8 sm:py-12 pb-28 sm:pb-12 max-w-2xl mx-auto">
       <Link to="/estimate" className="inline-flex items-center gap-1.5 text-sm text-brand-primary font-semibold hover:underline mb-2">
         <ArrowLeft className="w-4 h-4" />
         <span>{t("estimate.backToEstimate")}</span>
       </Link>
-      <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1 mb-8">{t("estimate.customerDetails")}</h1>
+      <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1 mb-2">{t("estimate.customerDetails")}</h1>
+      <p className="text-sm text-brand-muted mb-6">
+        Order for {totals.count} item{totals.count !== 1 ? "s" : ""} — Total {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totals.estimatedTotal)}
+      </p>
+
+      {/* Note box */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-sm text-amber-900 flex items-start gap-2">
+        <ShoppingCart className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+        <span>No advance payment needed. Our team will call or WhatsApp you to confirm everything.</span>
+      </div>
 
       <form onSubmit={handleSubmit} className="card-surface p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-2xl border border-brand-border shadow-sm" noValidate>
         {fields.map((f) => (
@@ -101,7 +100,7 @@ export default function CustomerDetails() {
               type={f.type}
               value={form[f.key]}
               onChange={(e) => update(f.key, e.target.value)}
-              className={`w-full rounded-lg border px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 ${
+              className={`w-full rounded-lg border px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 text-base ${
                 errors[f.key] ? "border-brand-error" : "border-brand-border"
               }`}
             />
@@ -124,7 +123,7 @@ export default function CustomerDetails() {
 
         {apiError && <p className="sm:col-span-2 text-sm text-brand-error">{apiError}</p>}
 
-        <button type="submit" disabled={submitting} className="btn-primary sm:col-span-2 flex items-center justify-center gap-2 disabled:opacity-60">
+        <button type="submit" disabled={submitting} className="btn-primary sm:col-span-2 flex items-center justify-center gap-2 disabled:opacity-60 !py-4 text-base font-bold">
           {submitting ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />

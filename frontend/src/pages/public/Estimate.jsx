@@ -1,9 +1,9 @@
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Minus, Plus, Trash2, Receipt, ArrowRight, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, ArrowRight, ShoppingBag } from "lucide-react";
 import { useEstimate } from "../../context/EstimateContext";
 import { formatCurrency } from "../../utils/format";
-import { EmptyState } from "../../components/common/States";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 
 export default function Estimate() {
@@ -11,34 +11,29 @@ export default function Estimate() {
   const { items, updateQuantity, removeItem, totals } = useEstimate();
   const navigate = useNavigate();
 
-  if (items.length === 0) {
-    return (
-      <div className="container-page py-16">
-        <EmptyState
-          icon={Receipt}
-          title={t("estimate.empty")}
-          description={t("estimate.emptyDesc")}
-          action={
-            <Link to="/products" className="btn-primary inline-flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" />
-              <span>{t("estimate.browse")}</span>
-            </Link>
-          }
-        />
-      </div>
-    );
-  }
+  // If empty, redirect to products
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate("/products", { replace: false });
+    }
+  }, [items.length, navigate]);
+
+  if (items.length === 0) return null;
 
   return (
-    <div className="container-page py-8 sm:py-12">
+    <div className="container-page py-8 sm:py-12 pb-28 sm:pb-12">
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
-          <Receipt className="w-5 h-5" />
+          <ShoppingCart className="w-5 h-5" />
         </div>
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("estimate.title")}</h1>
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("estimate.title")}</h1>
+          <p className="text-sm text-brand-muted">{totals.count} item{totals.count !== 1 ? "s" : ""} in your order</p>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
+        {/* Item list */}
         <div className="lg:col-span-2 space-y-3">
           {items.map((item) => {
             const name = i18n.language === "ta" && item.nameTa ? item.nameTa : item.nameEn;
@@ -58,19 +53,22 @@ export default function Estimate() {
                   <p className="text-xs text-brand-muted">{item.unit}</p>
                   <p className="text-sm font-bold text-brand-primary-dark mt-1">{formatCurrency(unitPrice)}</p>
                 </div>
-                <div className="flex items-center border border-brand-border rounded-full bg-white">
+                <div className="flex items-center border-2 border-brand-primary rounded-full bg-white overflow-hidden shrink-0">
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                    className="w-8 h-8 flex items-center justify-center text-brand-navy hover:bg-slate-50 rounded-l-full transition-colors"
-                    aria-label="Decrease quantity"
+                    onClick={() => {
+                      if (item.quantity <= 1) removeItem(item.productId);
+                      else updateQuantity(item.productId, item.quantity - 1);
+                    }}
+                    className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-l-full transition-colors"
+                    aria-label="Decrease"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="w-8 text-center text-sm font-semibold text-brand-navy">{item.quantity}</span>
+                  <span className="w-8 text-center text-sm font-bold text-brand-primary">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                    className="w-8 h-8 flex items-center justify-center text-brand-navy hover:bg-slate-50 rounded-r-full transition-colors"
-                    aria-label="Increase quantity"
+                    className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-r-full transition-colors"
+                    aria-label="Increase"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -88,17 +86,26 @@ export default function Estimate() {
               </div>
             );
           })}
+
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 text-sm text-brand-primary font-semibold hover:underline mt-2"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>{t("estimate.continueShopping")}</span>
+          </Link>
         </div>
 
+        {/* Order summary */}
         <div className="card-surface p-6 h-fit sticky top-24 rounded-2xl border border-brand-border shadow-sm">
           <h2 className="font-display font-semibold text-lg text-brand-navy mb-4">{t("estimate.estimatedTotal")}</h2>
           <div className="flex justify-between text-sm text-brand-muted mb-2">
-            <span>Subtotal</span>
+            <span>Subtotal ({totals.count} items)</span>
             <span>{formatCurrency(totals.subtotal)}</span>
           </div>
           {totals.discount > 0 && (
             <div className="flex justify-between text-sm text-brand-success mb-2 font-medium">
-              <span>Savings</span>
+              <span>You Save</span>
               <span>-{formatCurrency(totals.discount)}</span>
             </div>
           )}
@@ -106,16 +113,16 @@ export default function Estimate() {
             <span>{t("estimate.total")}</span>
             <span>{formatCurrency(totals.estimatedTotal)}</span>
           </div>
+          <p className="text-xs text-brand-muted mt-2 leading-relaxed">
+            Final price confirmed by our team via call or WhatsApp. No advance payment.
+          </p>
           <button
             onClick={() => navigate("/estimate/customer-details")}
-            className="btn-primary w-full mt-6 flex items-center justify-center gap-2"
+            className="btn-primary w-full mt-5 flex items-center justify-center gap-2 !py-3.5 text-base font-bold shadow-lg shadow-brand-orange/25 hover:scale-105 transition-all"
           >
             <span>{t("estimate.requestEstimate")}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
-          <Link to="/products" className="block text-center text-sm text-brand-primary font-semibold mt-3 hover:underline">
-            {t("estimate.continueShopping")}
-          </Link>
         </div>
       </div>
     </div>

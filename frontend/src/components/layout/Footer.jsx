@@ -49,9 +49,22 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="container-page py-4 text-xs text-white/50 flex flex-col sm:flex-row justify-between gap-2">
-          <span>© {year} {settings.business_name}. {t("footer.rights")}</span>
-          <span>{t("footer.notEcommerce")}</span>
+        <div className="container-page py-4 text-xs text-white/50 flex flex-col items-center justify-center text-center gap-2">
+          <span>
+            &copy; {year} {settings.business_name}. {t("footer.rights")}
+          </span>
+
+          <div className="text-white/40">
+            Made by{" "}
+            <a
+              href="https://midhun-v-s.web.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-gold hover:text-white underline underline-offset-2 transition-colors"
+            >
+              Midhun
+            </a>
+          </div>
         </div>
       </div>
     </footer>
