@@ -19,7 +19,8 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       await login(username, password);
-      const redirectTo = location.state?.from || "/admin/dashboard";
+      const from = location.state?.from;
+      const redirectTo = from && from !== "/admin" ? from : "/admin/dashboard";
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err.message || "Login failed");
