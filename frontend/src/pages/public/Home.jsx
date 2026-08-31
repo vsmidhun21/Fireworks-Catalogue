@@ -251,9 +251,9 @@ export default function Home() {
             </div>
 
             {/* Click hint */}
-            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
+            {/* <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
               ✨ {t("home.clickToBurst")}
-            </p>
+            </p> */}
 
             {/* Trust strip */}
             <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs sm:text-sm text-slate-300 max-w-xl mx-auto lg:mx-0">
