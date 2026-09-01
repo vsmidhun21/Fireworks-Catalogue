@@ -29,7 +29,24 @@ router.get("/categories/:slug", (req, res, next) => {
 // ---------- Products ----------
 router.get("/products", (req, res, next) => {
   try {
-    const { category, search, featured, sort, page = 1, limit = 10 } = req.query;
+    const { category, search, featured, sort, page, limit } = req.query;
+
+    // Customer catalogue is unpaginated by default: all active products are
+    // returned in one response. Pagination only kicks in if the caller
+    // explicitly supplies page/limit (kept for backward compatibility).
+    const paginated = page !== undefined || limit !== undefined;
+
+    if (!paginated) {
+      const { items, total } = ProductRepo.list({
+        activeOnly: true,
+        categorySlug: category,
+        search,
+        featured: featured === "true",
+        sort,
+      });
+      return ok(res, { items, total });
+    }
+
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const { items, total } = ProductRepo.list({

@@ -31,7 +31,7 @@ function withCategory(product) {
 }
 
 export const ProductRepo = {
-  list({ activeOnly = true, categorySlug, search, featured, sort, limit = 20, offset = 0 } = {}) {
+  list({ activeOnly = true, categorySlug, search, featured, sort, limit, offset = 0 } = {}) {
     const clauses = [];
     const params = [];
     let joinCategory = false;
@@ -59,8 +59,12 @@ export const ProductRepo = {
     const countSql = `SELECT COUNT(*) as c FROM products p ${join} ${where}`;
     const total = db.prepare(countSql).get(...params).c;
 
-    const listSql = `SELECT p.* FROM products p ${join} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
-    const rows = db.prepare(listSql).all(...params, limit, offset);
+    // When no limit is provided, return every matching row (no pagination).
+    const hasLimit = limit !== undefined && limit !== null;
+    const listSql = hasLimit
+      ? `SELECT p.* FROM products p ${join} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`
+      : `SELECT p.* FROM products p ${join} ${where} ORDER BY ${orderBy}`;
+    const rows = hasLimit ? db.prepare(listSql).all(...params, limit, offset) : db.prepare(listSql).all(...params);
 
     return { items: rows.map(rowToProduct).map(withCategory), total };
   },

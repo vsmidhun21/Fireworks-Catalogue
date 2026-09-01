@@ -5,23 +5,20 @@ import { Search } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
-import Pagination from "../../components/common/Pagination";
 
-const PAGE_SIZE = 10;
+const SKELETON_COUNT = 10;
 
 export default function Products() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
   const featured = searchParams.get("featured") || "";
   const sort = searchParams.get("sort") || "";
-  const page = parseInt(searchParams.get("page") || "1", 10);
 
   useEffect(() => {
     CategoryService.list().then((res) => setCategories(res.data));
@@ -29,19 +26,19 @@ export default function Products() {
 
   useEffect(() => {
     setLoading(true);
-    ProductService.list({ search, category, featured, sort, page, limit: PAGE_SIZE })
+    // No page/limit is sent: the customer catalogue returns all active
+    // products in a single, unpaginated response.
+    ProductService.list({ search, category, featured, sort })
       .then((res) => {
         setProducts(res.data.items);
-        setTotal(res.data.total);
       })
       .finally(() => setLoading(false));
-  }, [search, category, featured, sort, page]);
+  }, [search, category, featured, sort]);
 
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams);
     if (value) next.set(key, value);
     else next.delete(key);
-    next.delete("page");
     setSearchParams(next);
   }
 
@@ -91,29 +88,15 @@ export default function Products() {
       </div>
 
       {loading ? (
-        <LoadingGrid count={PAGE_SIZE} />
+        <LoadingGrid count={SKELETON_COUNT} />
       ) : products.length === 0 ? (
         <EmptyState title={t("product.noResults")} />
       ) : (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-
-          <Pagination
-            page={page}
-            total={total}
-            pageSize={PAGE_SIZE}
-            className="mt-10"
-            onPageChange={(nextPage) => {
-              const next = new URLSearchParams(searchParams);
-              next.set("page", String(nextPage));
-              setSearchParams(next);
-            }}
-          />
-        </>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
       )}
     </div>
   );
