@@ -282,31 +282,6 @@ export default function Home() {
       {/* ── PROMO BANNERS ── */}
       {promotions.length > 0 && <PromoBannerCarousel items={promotions.slice(0, 8)} />}
 
-      {/* ── CATEGORIES ── */}
-      <section className="container-page py-14 sm:py-16">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Explore Products / பொருட்களை பார்க்க</span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
-              {t("home.shopByCategory")}
-            </h2>
-          </div>
-          <Link to="/products" className="text-sm font-semibold text-brand-primary hover:underline flex items-center gap-1">
-            <span>View All Products</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        {loading ? (
-          <LoadingGrid count={8} />
-        ) : (
-          <CategoryShowcase categories={categories} />
-        )}
-      </section>
-
-      {/* ── GIFT BOX SHOWCASE ── */}
-      <GiftBoxShowcase />
-
       {/* ── FEATURED PRODUCTS ── */}
       <section className="bg-gradient-to-b from-slate-50 to-white py-14 sm:py-16 border-y border-brand-border">
         <div className="container-page">
@@ -333,6 +308,31 @@ export default function Home() {
             </div>
           )}
         </div>
+      </section>
+
+      {/* ── GIFT BOX SHOWCASE ── */}
+      <GiftBoxShowcase />
+
+      {/* ── CATEGORIES ── */}
+      <section className="container-page py-14 sm:py-16">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Explore Products / பொருட்களை பார்க்க</span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
+              {t("home.shopByCategory")}
+            </h2>
+          </div>
+          <Link to="/products" className="text-sm font-semibold text-brand-primary hover:underline flex items-center gap-1">
+            <span>View All Products</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {loading ? (
+          <LoadingGrid count={8} />
+        ) : (
+          <CategoryShowcase categories={categories} />
+        )}
       </section>
 
       {/* ── HOW TO ORDER ── */}
