@@ -7,6 +7,7 @@ import {
   Receipt,
   Users,
   Image,
+  Gift,
   Settings,
   LogOut,
   Menu,
@@ -14,6 +15,7 @@ import {
   ExternalLink,
   ShieldCheck,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import Logo from "../common/Logo";
 
@@ -24,10 +26,12 @@ const links = [
   { to: "/admin/estimates", label: "Estimates", icon: Receipt },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/promotions", label: "Promotions", icon: Image },
+  { to: "/admin/gift-boxes", labelKey: "admin.giftBoxes.navLabel", label: "Gift Boxes", icon: Gift },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout() {
+  const { t } = useTranslation();
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -74,7 +78,7 @@ export default function AdminLayout() {
                 }
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span>{link.label}</span>
+                <span>{link.labelKey ? t(link.labelKey) : link.label}</span>
               </NavLink>
             );
           })}

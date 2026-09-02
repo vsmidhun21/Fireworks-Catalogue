@@ -144,4 +144,29 @@ function toPromotionFormData(data) {
   return formData;
 }
 
+export const AdminGiftBoxService = {
+  list: (params) => api.get("/admin/gift-boxes", { params }),
+  create: (data) => api.post("/admin/gift-boxes", toGiftBoxFormData(data)),
+  update: (id, data) => api.put(`/admin/gift-boxes/${id}`, toGiftBoxFormData(data)),
+  setStatus: (id, isActive) => api.patch(`/admin/gift-boxes/${id}/status`, { isActive }),
+  remove: (id) => api.delete(`/admin/gift-boxes/${id}`),
+};
+
+function toGiftBoxFormData(data) {
+  const formData = new FormData();
+  Object.entries(data || {}).forEach(([key, value]) => {
+    if (value === undefined || key === "imageFile" || key === "image") return;
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+    formData.append(key, value);
+  });
+  const imageFile = data?.imageFile ?? data?.image;
+  if (imageFile instanceof File || imageFile instanceof Blob) {
+    formData.append("image", imageFile);
+  }
+  return formData;
+}
+
 export default api;

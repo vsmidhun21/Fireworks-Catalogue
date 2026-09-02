@@ -123,5 +123,41 @@
     "loading": "ஏற்றுகிறது...",
     "error": "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.",
     "currency": "Rs."
+  },
+  "admin": {
+    "giftBoxes": {
+      "navLabel": "பரிசு பெட்டிகள்",
+      "pageTitle": "பரிசு பெட்டிகள்",
+      "pageSubtitle": "வாடிக்கையாளர்களுக்குக் காட்டப்படும் பரிசு பெட்டி தொகுப்புகளை நிர்வகிக்கவும்",
+      "addButton": "பரிசு பெட்டி சேர்",
+      "createTitle": "புதிய பரிசு பெட்டி சேர்",
+      "editTitle": "பரிசு பெட்டியைத் திருத்து",
+      "nameEnLabel": "ஆங்கில பெயர்",
+      "nameTaLabel": "தமிழ் பெயர்",
+      "descriptionEnLabel": "விளக்கம் (ஆங்கிலம்)",
+      "descriptionTaLabel": "விளக்கம் (தமிழ்)",
+      "sortOrderLabel": "வரிசை எண்",
+      "imageLabel": "பரிசு பெட்டி படம்",
+      "uploadImage": "படத்தை பதிவேற்று",
+      "changeImage": "வேறு படத்தைத் தேர்ந்தெடு",
+      "imageHint": "PNG, JPG, WebP, SVG, அல்லது GIF 5MB வரை.",
+      "activeLabel": "இந்த பரிசு பெட்டியை வாடிக்கையாளர்களுக்குக் காட்டு",
+      "saveButton": "பரிசு பெட்டியை சேமி",
+      "updateButton": "பரிசு பெட்டியை புதுப்பி",
+      "savingButton": "சேமிக்கிறது...",
+      "cancelButton": "ரத்து செய்",
+      "tableName": "பெயர்",
+      "tableSort": "வரிசை",
+      "tableStatus": "நிலை",
+      "tableActions": "செயல்கள்",
+      "statusActive": "செயலில்",
+      "statusInactive": "செயலற்றது",
+      "loadingList": "பரிசு பெட்டிகள் ஏற்றப்படுகின்றன...",
+      "emptyList": "இதுவரை பரிசு பெட்டிகள் எதுவும் உருவாக்கப்படவில்லை.",
+      "editAction": "பரிசு பெட்டியைத் திருத்து",
+      "toggleAction": "பரிசு பெட்டி நிலையை மாற்று",
+      "deleteAction": "பரிசு பெட்டியை நீக்கு",
+      "deleteConfirm": "\"{{name}}\" பரிசு பெட்டியை நீக்கவா?"
+    }
   }
 }

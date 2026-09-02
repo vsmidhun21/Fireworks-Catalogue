@@ -123,5 +123,41 @@
     "loading": "Loading...",
     "error": "Something went wrong. Please try again.",
     "currency": "Rs."
+  },
+  "admin": {
+    "giftBoxes": {
+      "navLabel": "Gift Boxes",
+      "pageTitle": "Gift Boxes",
+      "pageSubtitle": "Manage curated Gift Box collections shown to customers",
+      "addButton": "Add Gift Box",
+      "createTitle": "Add New Gift Box",
+      "editTitle": "Edit Gift Box",
+      "nameEnLabel": "English Name",
+      "nameTaLabel": "Tamil Name",
+      "descriptionEnLabel": "Description (English)",
+      "descriptionTaLabel": "Description (Tamil)",
+      "sortOrderLabel": "Sort Order",
+      "imageLabel": "Gift Box Image",
+      "uploadImage": "Upload Image",
+      "changeImage": "Choose Another Image",
+      "imageHint": "PNG, JPG, WebP, SVG, or GIF up to 5MB.",
+      "activeLabel": "Show this gift box to customers",
+      "saveButton": "Save Gift Box",
+      "updateButton": "Update Gift Box",
+      "savingButton": "Saving...",
+      "cancelButton": "Cancel",
+      "tableName": "Name",
+      "tableSort": "Sort",
+      "tableStatus": "Status",
+      "tableActions": "Actions",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "loadingList": "Loading gift boxes...",
+      "emptyList": "No gift boxes created yet.",
+      "editAction": "Edit Gift Box",
+      "toggleAction": "Toggle Gift Box",
+      "deleteAction": "Delete Gift Box",
+      "deleteConfirm": "Delete gift box \"{{name}}\"?"
+    }
   }
 }
