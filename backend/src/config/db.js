@@ -134,6 +134,20 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_promotions_active_sort ON promotions(is_active, sort_order);
+
+  CREATE TABLE IF NOT EXISTS gift_boxes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name_en TEXT NOT NULL,
+    name_ta TEXT,
+    description_en TEXT,
+    description_ta TEXT,
+    image_url TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_gift_boxes_active_sort ON gift_boxes(is_active, sort_order);
 `);
 
 export function nowIso() {

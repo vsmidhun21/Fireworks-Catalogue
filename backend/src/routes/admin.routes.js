@@ -3,9 +3,10 @@ import { CategoryRepo } from "../repositories/categories.repo.js";
 import { ProductRepo } from "../repositories/products.repo.js";
 import { CustomerRepo, EstimateRepo, SettingsRepo } from "../repositories/estimates.repo.js";
 import { PromotionRepo } from "../repositories/promotions.repo.js";
+import { GiftBoxRepo } from "../repositories/giftBoxes.repo.js";
 import { ok, fail, slugify } from "../utils/response.js";
 import { requireAdmin } from "../middleware/auth.js";
-import { uploadProductImage, uploadPromotionImage, uploadBrandingImage } from "../middleware/upload.js";
+import { uploadProductImage, uploadPromotionImage, uploadBrandingImage, uploadGiftBoxImage } from "../middleware/upload.js";
 
 const router = Router();
 router.use(requireAdmin);
@@ -401,6 +402,84 @@ router.delete("/promotions/:id", (req, res, next) => {
   try {
     PromotionRepo.delete(Number(req.params.id));
     ok(res, null, "Promotion deleted");
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- Gift Boxes ----------
+router.get("/gift-boxes", (req, res, next) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 10, 100);
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const { items, total } = GiftBoxRepo.list({
+      limit: take,
+      offset: (currentPage - 1) * take,
+    });
+    ok(res, { items, total, page: currentPage, limit: take });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/gift-boxes", uploadGiftBoxImage.single("image"), (req, res, next) => {
+  try {
+    const b = req.body;
+    if (!b.nameEn) return fail(res, "English name is required", 422);
+    const giftBox = GiftBoxRepo.create({
+      nameEn: b.nameEn,
+      nameTa: parseNullableText(b.nameTa),
+      descriptionEn: parseNullableText(b.descriptionEn),
+      descriptionTa: parseNullableText(b.descriptionTa),
+      imageUrl: req.file ? `/uploads/gift-boxes/${req.file.filename}` : parseNullableText(b.imageUrl),
+      sortOrder: parseNullableNumber(b.sortOrder) ?? 0,
+      isActive: b.isActive === undefined ? true : parseBoolean(b.isActive),
+    });
+    ok(res, giftBox, "Gift box created", 201);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.put("/gift-boxes/:id", uploadGiftBoxImage.single("image"), (req, res, next) => {
+  try {
+    const b = req.body;
+    const fields = {};
+    if (b.nameEn != null) fields.nameEn = b.nameEn;
+    if (b.nameTa !== undefined) fields.nameTa = parseNullableText(b.nameTa);
+    if (b.descriptionEn !== undefined) fields.descriptionEn = parseNullableText(b.descriptionEn);
+    if (b.descriptionTa !== undefined) fields.descriptionTa = parseNullableText(b.descriptionTa);
+    if (req.file) fields.imageUrl = `/uploads/gift-boxes/${req.file.filename}`;
+    else if (b.imageUrl !== undefined) fields.imageUrl = parseNullableText(b.imageUrl);
+    if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
+    if (b.isActive !== undefined) fields.isActive = parseBoolean(b.isActive);
+
+    const giftBox = GiftBoxRepo.update(Number(req.params.id), fields);
+    if (!giftBox) return fail(res, "Gift box not found", 404);
+    ok(res, giftBox, "Gift box updated");
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.patch("/gift-boxes/:id/status", (req, res, next) => {
+  try {
+    const giftBox = GiftBoxRepo.setActive(Number(req.params.id), !!req.body.isActive);
+    if (!giftBox) return fail(res, "Gift box not found", 404);
+    ok(res, giftBox, "Gift box status updated");
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/gift-boxes/:id", (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const giftBox = GiftBoxRepo.findById(id);
+    if (!giftBox) return fail(res, "Gift box not found", 404);
+    GiftBoxRepo.delete(id);
+    ok(res, null, "Gift box deleted");
   } catch (e) {
     next(e);
   }

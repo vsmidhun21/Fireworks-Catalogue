@@ -3,6 +3,7 @@ import { CategoryRepo } from "../repositories/categories.repo.js";
 import { ProductRepo } from "../repositories/products.repo.js";
 import { SettingsRepo } from "../repositories/estimates.repo.js";
 import { PromotionRepo } from "../repositories/promotions.repo.js";
+import { GiftBoxRepo } from "../repositories/giftBoxes.repo.js";
 import { ok, fail } from "../utils/response.js";
 
 const router = Router();
@@ -102,6 +103,16 @@ router.get("/promotions", (req, res, next) => {
 router.get("/settings/public", (req, res, next) => {
   try {
     ok(res, SettingsRepo.getAll());
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- Gift Boxes ----------
+// Active gift boxes only, sorted for display. No admin auth required.
+router.get("/gift-boxes", (req, res, next) => {
+  try {
+    ok(res, GiftBoxRepo.findAll({ activeOnly: true }));
   } catch (e) {
     next(e);
   }
