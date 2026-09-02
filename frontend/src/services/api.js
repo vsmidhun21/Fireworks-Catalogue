@@ -42,6 +42,11 @@ export const SettingsService = {
   public: () => api.get("/settings/public"),
 };
 
+export const GiftBoxService = {
+  // Public endpoint only ever returns active gift boxes, sorted for display.
+  list: () => api.get("/gift-boxes"),
+};
+
 export const PromotionService = {
   list: (params) => api.get("/promotions", { params }),
 };
@@ -79,6 +84,32 @@ export const AdminProductService = {
   setFeatured: (id, isFeatured) => api.patch(`/admin/products/${id}/featured`, { isFeatured }),
   remove: (id) => api.delete(`/admin/products/${id}`),
 };
+
+export const AdminGiftBoxService = {
+  list: (params) => api.get("/admin/gift-boxes", { params }),
+  get: (id) => api.get(`/admin/gift-boxes/${id}`),
+  create: (data) => api.post("/admin/gift-boxes", toGiftBoxFormData(data)),
+  update: (id, data) => api.put(`/admin/gift-boxes/${id}`, toGiftBoxFormData(data)),
+  setStatus: (id, isActive) => api.patch(`/admin/gift-boxes/${id}/status`, { isActive }),
+  remove: (id) => api.delete(`/admin/gift-boxes/${id}`),
+};
+
+function toGiftBoxFormData(data) {
+  const formData = new FormData();
+  Object.entries(data || {}).forEach(([key, value]) => {
+    if (value === undefined || key === "imageFile" || key === "image") return;
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+    formData.append(key, value);
+  });
+  const imageFile = data?.imageFile ?? data?.image;
+  if (imageFile instanceof File || imageFile instanceof Blob) {
+    formData.append("image", imageFile);
+  }
+  return formData;
+}
 
 function toProductFormData(data) {
   const formData = new FormData();
@@ -128,31 +159,6 @@ export const AdminPromotionService = {
 };
 
 function toPromotionFormData(data) {
-  const formData = new FormData();
-  Object.entries(data || {}).forEach(([key, value]) => {
-    if (value === undefined || key === "imageFile" || key === "image") return;
-    if (value === null) {
-      formData.append(key, "");
-      return;
-    }
-    formData.append(key, value);
-  });
-  const imageFile = data?.imageFile ?? data?.image;
-  if (imageFile instanceof File || imageFile instanceof Blob) {
-    formData.append("image", imageFile);
-  }
-  return formData;
-}
-
-export const AdminGiftBoxService = {
-  list: (params) => api.get("/admin/gift-boxes", { params }),
-  create: (data) => api.post("/admin/gift-boxes", toGiftBoxFormData(data)),
-  update: (id, data) => api.put(`/admin/gift-boxes/${id}`, toGiftBoxFormData(data)),
-  setStatus: (id, isActive) => api.patch(`/admin/gift-boxes/${id}/status`, { isActive }),
-  remove: (id) => api.delete(`/admin/gift-boxes/${id}`),
-};
-
-function toGiftBoxFormData(data) {
   const formData = new FormData();
   Object.entries(data || {}).forEach(([key, value]) => {
     if (value === undefined || key === "imageFile" || key === "image") return;

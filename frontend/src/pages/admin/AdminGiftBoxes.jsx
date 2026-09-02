@@ -114,7 +114,7 @@ export default function AdminGiftBoxes() {
   }
 
   async function handleDelete(item) {
-    if (!confirm(t("admin.giftBoxes.deleteConfirm", { name: item.nameEn }))) return;
+    if (!confirm(t("Delete Confirm", { name: item.nameEn }))) return;
     await AdminGiftBoxService.remove(item.id);
     const nextPage = giftBoxes.length === 1 && page > 1 ? page - 1 : page;
     load(nextPage);
@@ -124,12 +124,12 @@ export default function AdminGiftBoxes() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-brand-navy">{t("admin.giftBoxes.pageTitle")}</h1>
-          <p className="text-sm text-brand-muted">{t("admin.giftBoxes.pageSubtitle")}</p>
+          <h1 className="font-display text-2xl font-bold text-brand-navy">{t("Gift Boxes")}</h1>
+          <p className="text-sm text-brand-muted">{t("Handpicked festive Gift Boxes — ask us for the latest availability and pricing.")}</p>
         </div>
         <button onClick={openCreate} className="btn-primary !py-2 !px-4 text-sm flex items-center gap-2">
           <Gift className="w-4 h-4" />
-          <span>{t("admin.giftBoxes.addButton")}</span>
+          <span>{t("Add Gift Box")}</span>
         </button>
       </div>
 

@@ -26,7 +26,7 @@ const links = [
   { to: "/admin/estimates", label: "Estimates", icon: Receipt },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/promotions", label: "Promotions", icon: Image },
-  { to: "/admin/gift-boxes", labelKey: "admin.giftBoxes.navLabel", label: "Gift Boxes", icon: Gift },
+  { to: "/admin/gift-boxes", labelKey: "Gift Boxes", label: "Gift Boxes", icon: Gift },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

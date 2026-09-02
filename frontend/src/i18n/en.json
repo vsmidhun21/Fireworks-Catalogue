@@ -10,6 +10,16 @@
     "getEstimate": "Order Now",
     "orderNow": "Order Now"
   },
+  "Gift Boxes": "Gift Boxes",
+  "giftBoxPage": {
+    "badge": "Curated Collections",
+    "title": "Gift Boxes for Every Celebration",
+    "subtitle": "Handpicked festive Gift Boxes — ask us for the latest availability and pricing.",
+    "emptyTitle": "No Gift Boxes available right now",
+    "emptyDescription": "Please check back soon, or contact us on WhatsApp for our current Gift Box collection.",
+    "enquireWhatsApp": "Ask on WhatsApp",
+    "whatsappMessage": "Hi! I'm interested in the \"{{name}}\" Gift Box. Could you share more details?"
+  },
   "home": {
     "heroTitle": "Light Up Your Celebrations!",
     "heroSubtitle": "Buy premium crackers directly from Sivakasi — best prices, safe delivery across India.",
@@ -122,26 +132,23 @@
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong. Please try again.",
-    "currency": "Rs."
+    "currency": "Rs.",
+    "Delete Confirm": "Are you sure you want to delete {{name}}? This action cannot be undone."
   },
   "admin": {
     "giftBoxes": {
-      "navLabel": "Gift Boxes",
-      "pageTitle": "Gift Boxes",
-      "pageSubtitle": "Manage curated Gift Box collections shown to customers",
-      "addButton": "Add Gift Box",
-      "createTitle": "Add New Gift Box",
       "editTitle": "Edit Gift Box",
-      "nameEnLabel": "English Name",
-      "nameTaLabel": "Tamil Name",
+      "createTitle": "Add New Gift Box",
+      "nameEnLabel": "Gift Box Name (English)",
+      "nameTaLabel": "Gift Box Name (Tamil)",
       "descriptionEnLabel": "Description (English)",
       "descriptionTaLabel": "Description (Tamil)",
       "sortOrderLabel": "Sort Order",
       "imageLabel": "Gift Box Image",
       "uploadImage": "Upload Image",
-      "changeImage": "Choose Another Image",
-      "imageHint": "PNG, JPG, WebP, SVG, or GIF up to 5MB.",
-      "activeLabel": "Show this gift box to customers",
+      "changeImage": "Change Image",
+      "imageHint": "Recommended: Square image, at least 400x400px",
+      "activeLabel": "Active",
       "saveButton": "Save Gift Box",
       "updateButton": "Update Gift Box",
       "savingButton": "Saving...",
@@ -150,14 +157,13 @@
       "tableSort": "Sort",
       "tableStatus": "Status",
       "tableActions": "Actions",
+      "loadingList": "Loading gift boxes...",
+      "emptyList": "No gift boxes found",
       "statusActive": "Active",
       "statusInactive": "Inactive",
-      "loadingList": "Loading gift boxes...",
-      "emptyList": "No gift boxes created yet.",
-      "editAction": "Edit Gift Box",
-      "toggleAction": "Toggle Gift Box",
-      "deleteAction": "Delete Gift Box",
-      "deleteConfirm": "Delete gift box \"{{name}}\"?"
+      "editAction": "Edit",
+      "toggleAction": "Toggle Status",
+      "deleteAction": "Delete"
     }
   }
 }
