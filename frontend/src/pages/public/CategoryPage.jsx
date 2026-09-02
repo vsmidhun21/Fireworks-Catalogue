@@ -5,40 +5,60 @@ import { Search, ShoppingBag } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
-import Pagination from "../../components/common/Pagination";
 
-const PAGE_SIZE = 10;
+const SKELETON_COUNT = 10;
+const EXPLORE_MORE_LIMIT = 8;
 
 export default function CategoryPage() {
   const { slug } = useParams();
   const { t, i18n } = useTranslation();
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [exploreProducts, setExploreProducts] = useState([]);
 
-  function loadProducts(nextPage = 1) {
-    return ProductService.list({ category: slug, page: nextPage, limit: PAGE_SIZE }).then((res) => {
+  function loadProducts() {
+    // No page/limit is sent: the category page shows every active product
+    // in the category in a single, unpaginated response.
+    return ProductService.list({ category: slug }).then((res) => {
       setProducts(res?.data?.items || []);
-      setTotal(res?.data?.total || 0);
-      setPage(res?.data?.page || nextPage);
     });
+  }
+
+  function loadExploreMore(categoryProductIds) {
+    // Reuse the existing featured-products endpoint so no backend change is
+    // needed. Featured products naturally span multiple categories; any
+    // items already shown in the category section above are filtered out
+    // so this section doesn't just repeat the same products.
+    ProductService.featured()
+      .then((res) => {
+        const items = res?.data || [];
+        const filtered = items.filter((p) => !categoryProductIds.has(p.id));
+        setExploreProducts(filtered.slice(0, EXPLORE_MORE_LIMIT));
+      })
+      .catch(() => setExploreProducts([]));
   }
 
   useEffect(() => {
     setLoading(true);
     setNotFound(false);
-    setPage(1);
+    setExploreProducts([]);
     CategoryService.bySlug(slug)
       .then((res) => {
         setCategory(res.data);
-        return loadProducts(1);
+        return loadProducts();
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  useEffect(() => {
+    if (loading || notFound) return;
+    loadExploreMore(new Set(products.map((p) => p.id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, notFound, slug]);
 
   if (notFound) {
     return (
@@ -67,27 +87,28 @@ export default function CategoryPage() {
       )}
 
       {loading ? (
-        <LoadingGrid count={PAGE_SIZE} />
+        <LoadingGrid count={SKELETON_COUNT} />
       ) : products.length === 0 ? (
         <EmptyState title={t("product.noResults")} />
       ) : (
-        <>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      )}
+
+      {!loading && !notFound && exploreProducts.length > 0 && (
+        <div className="mt-12 sm:mt-16">
+          <h2 className="font-display text-xl sm:text-2xl font-bold text-brand-navy mb-6">
+            {t("product.exploreMore")}
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {products.map((p) => (
+            {exploreProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
-          <Pagination
-            page={page}
-            total={total}
-            pageSize={PAGE_SIZE}
-            className="mt-10"
-            onPageChange={(nextPage) => {
-              setLoading(true);
-              loadProducts(nextPage).finally(() => setLoading(false));
-            }}
-          />
-        </>
+        </div>
       )}
     </div>
   );
