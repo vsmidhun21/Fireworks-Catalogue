@@ -3,6 +3,7 @@ import {
   Sparkles, Flame, Rocket, Gift, Zap, Disc3, PartyPopper, Layers,
   ArrowUpRight, Star,
 } from "lucide-react";
+import { getProductImageUrl, onImageError } from "../../utils/image";
 
 // Distinct visual treatment per category — gradient + accent + a short,
 // non-repetitive blurb — so cards feel visually different from one another
@@ -98,23 +99,34 @@ export default function CategoryShowcase({ categories = [] }) {
               isHero ? "sm:col-span-2 sm:row-span-2 aspect-[4/5] sm:aspect-auto sm:h-full min-h-[280px] sm:min-h-[340px]" : "aspect-[4/5] sm:min-h-[160px]"
             }`}
           >
-            <div className={`absolute inset-0 bg-gradient-to-br ${cfg.gradient}`} />
+            {c.imageUrl ? (
+              <img
+                src={getProductImageUrl(c.imageUrl)}
+                alt={c.nameEn}
+                onError={onImageError}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <>
+                <div className={`absolute inset-0 bg-gradient-to-br ${cfg.gradient}`} />
 
-            {/* Decorative dot texture */}
-            <div
-              className="absolute inset-0 opacity-[0.12] pointer-events-none"
-              style={{ backgroundImage: "radial-gradient(circle, #fff 1.5px, transparent 1.5px)", backgroundSize: "20px 20px" }}
-            />
+                {/* Decorative dot texture */}
+                <div
+                  className="absolute inset-0 opacity-[0.12] pointer-events-none"
+                  style={{ backgroundImage: "radial-gradient(circle, #fff 1.5px, transparent 1.5px)", backgroundSize: "20px 20px" }}
+                />
 
-            {/* Oversized watermark icon */}
-            <Icon
-              className={`absolute text-white/15 group-hover:text-white/25 group-hover:scale-110 transition-all duration-500 ${
-                isHero ? "w-40 h-40 -bottom-6 -right-6" : "w-24 h-24 -bottom-4 -right-4"
-              }`}
-              strokeWidth={1.2}
-            />
+                {/* Oversized watermark icon */}
+                <Icon
+                  className={`absolute text-white/15 group-hover:text-white/25 group-hover:scale-110 transition-all duration-500 ${
+                    isHero ? "w-40 h-40 -bottom-6 -right-6" : "w-24 h-24 -bottom-4 -right-4"
+                  }`}
+                  strokeWidth={1.2}
+                />
+              </>
+            )}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
             <div className={`relative z-10 h-full flex flex-col justify-end p-4 sm:p-5 ${isHero ? "sm:p-7" : ""}`}>
               <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center mb-3 ${isHero ? "sm:w-12 sm:h-12" : ""}`}>

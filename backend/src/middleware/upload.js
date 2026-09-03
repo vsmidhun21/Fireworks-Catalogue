@@ -51,3 +51,4 @@ export const uploadProductImage = createImageUploader({ folder: "products", file
 export const uploadPromotionImage = createImageUploader({ folder: "promotions", filePrefix: "promotion" });
 export const uploadBrandingImage = createImageUploader({ folder: "branding", filePrefix: "brand" });
 export const uploadGiftBoxImage = createImageUploader({ folder: "gift-boxes", filePrefix: "giftbox" });
+export const uploadCategoryImage = createImageUploader({ folder: "categories", filePrefix: "category" });

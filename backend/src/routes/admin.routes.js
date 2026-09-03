@@ -6,7 +6,13 @@ import { PromotionRepo } from "../repositories/promotions.repo.js";
 import { GiftBoxRepo } from "../repositories/giftBoxes.repo.js";
 import { ok, fail, slugify } from "../utils/response.js";
 import { requireAdmin } from "../middleware/auth.js";
-import { uploadProductImage, uploadPromotionImage, uploadBrandingImage, uploadGiftBoxImage } from "../middleware/upload.js";
+import {
+  uploadProductImage,
+  uploadPromotionImage,
+  uploadBrandingImage,
+  uploadGiftBoxImage,
+  uploadCategoryImage,
+} from "../middleware/upload.js";
 
 const router = Router();
 router.use(requireAdmin);
@@ -99,7 +105,7 @@ router.get("/categories", (req, res, next) => {
   }
 });
 
-router.post("/categories", (req, res, next) => {
+router.post("/categories", uploadCategoryImage.single("image"), (req, res, next) => {
   try {
     const { nameEn, nameTa, descriptionEn, descriptionTa, imageUrl, sortOrder } = req.body;
     if (!nameEn) return fail(res, "English name is required", 422);
@@ -108,8 +114,8 @@ router.post("/categories", (req, res, next) => {
       nameTa,
       descriptionEn,
       descriptionTa,
-      imageUrl,
-      sortOrder,
+      imageUrl: req.file ? `/uploads/categories/${req.file.filename}` : parseNullableText(imageUrl),
+      sortOrder: parseNullableNumber(sortOrder) ?? 0,
       slug: slugify(nameEn) + "-" + Date.now().toString(36),
     });
     ok(res, category, "Category created", 201);
@@ -118,9 +124,18 @@ router.post("/categories", (req, res, next) => {
   }
 });
 
-router.put("/categories/:id", (req, res, next) => {
+router.put("/categories/:id", uploadCategoryImage.single("image"), (req, res, next) => {
   try {
-    const category = CategoryRepo.update(Number(req.params.id), req.body);
+    const b = req.body;
+    const fields = { ...b };
+    if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
+    if (req.file) {
+      fields.imageUrl = `/uploads/categories/${req.file.filename}`;
+    } else if (b.imageUrl !== undefined) {
+      // Empty string means "remove the existing image" (falls back to placeholder on the frontend).
+      fields.imageUrl = parseNullableText(b.imageUrl);
+    }
+    const category = CategoryRepo.update(Number(req.params.id), fields);
     if (!category) return fail(res, "Category not found", 404);
     ok(res, category, "Category updated");
   } catch (e) {

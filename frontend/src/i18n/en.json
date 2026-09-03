@@ -136,6 +136,13 @@
     "Delete Confirm": "Are you sure you want to delete {{name}}? This action cannot be undone."
   },
   "admin": {
+    "categories": {
+      "imageLabel": "Category Image",
+      "uploadImage": "Upload Image",
+      "changeImage": "Change Image",
+      "removeImage": "Remove Image",
+      "imageHint": "Recommended: Square image, at least 400x400px"
+    },
     "giftBoxes": {
       "editTitle": "Edit Gift Box",
       "createTitle": "Add New Gift Box",

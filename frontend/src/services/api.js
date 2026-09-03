@@ -69,11 +69,28 @@ export const AdminDashboardService = {
 
 export const AdminCategoryService = {
   list: (params) => api.get("/admin/categories", { params }),
-  create: (data) => api.post("/admin/categories", data),
-  update: (id, data) => api.put(`/admin/categories/${id}`, data),
+  create: (data) => api.post("/admin/categories", toCategoryFormData(data)),
+  update: (id, data) => api.put(`/admin/categories/${id}`, toCategoryFormData(data)),
   setStatus: (id, isActive) => api.patch(`/admin/categories/${id}/status`, { isActive }),
   remove: (id) => api.delete(`/admin/categories/${id}`),
 };
+
+function toCategoryFormData(data) {
+  const formData = new FormData();
+  Object.entries(data || {}).forEach(([key, value]) => {
+    if (value === undefined || key === "imageFile" || key === "image") return;
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+    formData.append(key, value);
+  });
+  const imageFile = data?.imageFile ?? data?.image;
+  if (imageFile instanceof File || imageFile instanceof Blob) {
+    formData.append("image", imageFile);
+  }
+  return formData;
+}
 
 export const AdminProductService = {
   list: (params) => api.get("/admin/products", { params }),
