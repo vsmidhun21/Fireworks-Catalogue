@@ -39,8 +39,8 @@ export default function Estimate() {
             const name = i18n.language === "ta" && item.nameTa ? item.nameTa : item.nameEn;
             const unitPrice = item.discountedPrice ?? item.originalPrice;
             return (
-              <div key={item.productId} className="card-surface p-4 flex items-center gap-4 rounded-xl border border-brand-border/80 shadow-sm">
-                <div className="w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden border border-brand-border/50">
+              <div key={item.productId} className="card-surface grid grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 p-3 rounded-xl border border-brand-border/80 shadow-sm sm:flex sm:gap-4 sm:p-4">
+                <div className="row-span-2 w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden border border-brand-border/50 sm:row-span-1">
                   <img
                     src={getProductImageUrl(item.imageUrl)}
                     alt={name}
@@ -49,11 +49,13 @@ export default function Estimate() {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-brand-navy truncate">{name}</p>
-                  <p className="text-xs text-brand-muted">{item.unit}</p>
-                  <p className="text-sm font-bold text-brand-primary-dark mt-1">{formatCurrency(unitPrice)}</p>
+                  <p className="font-semibold leading-snug text-brand-navy whitespace-normal break-words">{name}</p>
+                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-brand-muted sm:block">
+                    <span>{item.unit}</span>
+                    <span className="font-bold text-brand-primary-dark sm:mt-1 sm:block">{formatCurrency(unitPrice)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center border-2 border-brand-primary rounded-full bg-white overflow-hidden shrink-0">
+                <div className="col-start-2 row-start-2 justify-self-start flex items-center border-2 border-brand-primary rounded-full bg-white overflow-hidden shrink-0 sm:order-none sm:col-auto sm:row-auto">
                   <button
                     onClick={() => {
                       if (item.quantity <= 1) removeItem(item.productId);

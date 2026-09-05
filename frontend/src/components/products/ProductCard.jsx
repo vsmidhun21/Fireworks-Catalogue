@@ -91,7 +91,7 @@ export default function ProductCard({ product }) {
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+              <span className="hidden sm:flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
                 <Check className="w-3.5 h-3.5" />
                 {t("product.inOrder")}
               </span>
