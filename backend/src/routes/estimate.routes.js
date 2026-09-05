@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { ProductRepo } from "../repositories/products.repo.js";
 import { CustomerRepo, EstimateRepo } from "../repositories/estimates.repo.js";
 import { ok, fail, generateEstimateNumber } from "../utils/response.js";
+import { sendNewEstimateAdminEmail } from "../services/email.service.js";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ const estimateLimiter = rateLimit({
   message: { success: false, message: "Too many estimate requests. Please try again later.", errors: [] },
 });
 
-router.post("/estimates", estimateLimiter, (req, res, next) => {
+router.post("/estimates", estimateLimiter, async (req, res, next) => {
   try {
     const { items, customer } = req.body;
 
@@ -105,6 +106,16 @@ router.post("/estimates", estimateLimiter, (req, res, next) => {
       customerNotes: customer.notes || null,
       items: preparedItems,
     });
+
+    // Send admin email notification (fail-safe: errors are logged, never abort response)
+    try {
+      await sendNewEstimateAdminEmail(created);
+    } catch (emailErr) {
+      console.error(
+        `[Email Service] Failed to send admin notification email for ${created.estimateNumber}:`,
+        emailErr.message || emailErr
+      );
+    }
 
     ok(res, created, "Estimate submitted successfully", 201);
   } catch (e) {
