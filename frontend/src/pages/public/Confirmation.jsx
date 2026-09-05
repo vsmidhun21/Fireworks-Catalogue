@@ -1,13 +1,24 @@
-import { useParams, Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, MessageCircle, ShoppingBag } from "lucide-react";
+import { CheckCircle2, MessageCircle, ShoppingBag, ClipboardCheck, PhoneCall, MessageSquare, Truck } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import { whatsappLink } from "../../utils/format";
 
 export default function Confirmation() {
   const { estimateNumber } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { settings } = useSettings();
+
+  useEffect(() => {
+    if (!location.state?.fromOrderSubmission) {
+      navigate("/products", { replace: true });
+    }
+  }, [location.state, navigate]);
+
+  if (!location.state?.fromOrderSubmission) return null;
 
   return (
     <div className="container-page py-16 sm:py-24 max-w-xl mx-auto text-center">
@@ -29,10 +40,10 @@ export default function Confirmation() {
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm text-amber-900 text-left">
         <p className="font-bold mb-1">{t("confirmation.whatsNextTitle")}</p>
         <ul className="space-y-1 text-amber-800">
-          <li>✅ {t("confirmation.step1")}</li>
-          <li>📞 {t("confirmation.step2")}</li>
-          <li>💬 {t("confirmation.step3")}</li>
-          <li>🚚 {t("confirmation.step4")}</li>
+          <li className="flex items-start gap-2"><ClipboardCheck className="w-4 h-4 mt-0.5 shrink-0" /> <span>{t("confirmation.step1")}</span></li>
+          <li className="flex items-start gap-2"><PhoneCall className="w-4 h-4 mt-0.5 shrink-0" /> <span>{t("confirmation.step2")}</span></li>
+          <li className="flex items-start gap-2"><MessageSquare className="w-4 h-4 mt-0.5 shrink-0" /> <span>{t("confirmation.step3")}</span></li>
+          <li className="flex items-start gap-2"><Truck className="w-4 h-4 mt-0.5 shrink-0" /> <span>{t("confirmation.step4")}</span></li>
         </ul>
       </div>
 

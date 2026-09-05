@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Send, Loader2, ShoppingCart } from "lucide-react";
@@ -15,10 +15,11 @@ export default function CustomerDetails() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
+  const submittedRef = useRef(false);
 
   // Redirect to products if no items
   useEffect(() => {
-    if (items.length === 0) {
+    if (items.length === 0 && !submittedRef.current) {
       navigate("/products", { replace: true });
     }
   }, [items.length, navigate]);
@@ -35,9 +36,12 @@ export default function CustomerDetails() {
     for (const field of required) {
       if (!form[field]?.trim()) next[field] = t("estimate.required");
     }
-    if (form.phone && !/^[0-9+\s-]{7,15}$/.test(form.phone.trim())) {
-      next.phone = t("estimate.invalidPhone");
-    }
+    if (form.name && !/^\p{L}[\p{L} .'-]{1,79}$/u.test(form.name.trim())) next.name = t("estimate.invalidName");
+    if (form.phone && !/^[6-9]\d{9}$/.test(form.phone.trim())) next.phone = t("estimate.invalidPhone");
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) next.email = t("estimate.invalidEmail");
+    if (form.city && !/^\p{L}[\p{L} .'-]{1,49}$/u.test(form.city.trim())) next.city = t("estimate.invalidCity");
+    if (form.state && !/^\p{L}[\p{L} .'-]{1,49}$/u.test(form.state.trim())) next.state = t("estimate.invalidState");
+    if (form.pincode && !/^\d{6}$/.test(form.pincode.trim())) next.pincode = t("estimate.invalidPincode");
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -53,8 +57,9 @@ export default function CustomerDetails() {
         customer: form,
       };
       const res = await EstimateService.submit(payload);
+      submittedRef.current = true;
       clear();
-      navigate(`/estimate/confirmation/${res.data.estimateNumber}`);
+      navigate(`/estimate/confirmation/${res.data.estimateNumber}`, { replace: true, state: { fromOrderSubmission: true } });
     } catch (err) {
       setApiError(err.message || t("common.error"));
     } finally {
@@ -64,12 +69,12 @@ export default function CustomerDetails() {
 
   const fields = [
     { key: "name", labelKey: "name", type: "text", full: true },
-    { key: "phone", labelKey: "phone", type: "tel" },
+    { key: "phone", labelKey: "phone", type: "tel", inputMode: "numeric", maxLength: 10 },
     { key: "email", labelKey: "email", type: "email" },
     { key: "address", labelKey: "address", type: "text", full: true },
-    { key: "city", labelKey: "city", type: "text" },
-    { key: "state", labelKey: "state", type: "text" },
-    { key: "pincode", labelKey: "pincode", type: "text" },
+    { key: "city", labelKey: "city", type: "text", maxLength: 50 },
+    { key: "state", labelKey: "state", type: "text", maxLength: 50 },
+    { key: "pincode", labelKey: "pincode", type: "text", inputMode: "numeric", maxLength: 6 },
   ];
 
   return (
@@ -87,10 +92,10 @@ export default function CustomerDetails() {
       </p>
 
       {/* Note box */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-sm text-amber-900 flex items-start gap-2">
+      {/* <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-sm text-amber-900 flex items-start gap-2">
         <ShoppingCart className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
         <span>{t("estimate.noAdvanceNote")}</span>
-      </div>
+      </div> */}
 
       <form onSubmit={handleSubmit} className="card-surface p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-2xl border border-brand-border shadow-sm" noValidate>
         {fields.map((f) => (
@@ -101,6 +106,8 @@ export default function CustomerDetails() {
             <input
               id={f.key}
               type={f.type}
+              inputMode={f.inputMode}
+              maxLength={f.maxLength}
               value={form[f.key]}
               onChange={(e) => update(f.key, e.target.value)}
               className={`w-full rounded-lg border px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 text-base ${

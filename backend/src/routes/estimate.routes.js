@@ -25,6 +25,29 @@ router.post("/estimates", estimateLimiter, (req, res, next) => {
       return fail(res, "Missing required customer details", 422);
     }
 
+    const validationErrors = [];
+    if (!/^\p{L}[\p{L} .'-]{1,79}$/u.test(String(customer.name).trim())) {
+      validationErrors.push("name must contain letters, spaces, apostrophes or hyphens");
+    }
+    if (!/^[6-9]\d{9}$/.test(String(customer.phone).trim())) {
+      validationErrors.push("phone must be a valid 10-digit mobile number");
+    }
+    if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(customer.email).trim())) {
+      validationErrors.push("email must be valid");
+    }
+    if (!/^\p{L}[\p{L} .'-]{1,49}$/u.test(String(customer.city).trim())) {
+      validationErrors.push("city must contain letters, spaces, apostrophes or hyphens");
+    }
+    if (!/^\p{L}[\p{L} .'-]{1,49}$/u.test(String(customer.state).trim())) {
+      validationErrors.push("state must contain letters, spaces, apostrophes or hyphens");
+    }
+    if (!/^\d{6}$/.test(String(customer.pincode).trim())) {
+      validationErrors.push("pincode must be a 6-digit number");
+    }
+    if (validationErrors.length > 0) {
+      return fail(res, "Please provide valid customer details", 422, validationErrors);
+    }
+
     // Re-validate every product server-side (never trust client price/quantity)
     const productIds = [...new Set(items.map((i) => Number(i.productId)))];
     const dbProducts = ProductRepo.findManyByIds(productIds);

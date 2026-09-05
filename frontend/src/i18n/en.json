@@ -137,7 +137,12 @@
     "finalPriceNote": "Final price confirmed by our team via call or WhatsApp. No advance payment.",
     "orderForItems": "Order for {{count}} item(s) — Total {{amount}}",
     "noAdvanceNote": "No advance payment needed. Our team will call or WhatsApp you to confirm everything.",
-    "invalidPhone": "Enter a valid phone number"
+    "invalidPhone": "Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9",
+    "invalidName": "Enter a valid name using letters, spaces, apostrophes or hyphens",
+    "invalidEmail": "Enter a valid email address",
+    "invalidCity": "Enter a valid city name without numbers",
+    "invalidState": "Enter a valid state name without numbers",
+    "invalidPincode": "Enter a valid 6-digit pincode"
   },
   "footer": {
     "tagline": "Premium crackers for every festival and celebration.",
