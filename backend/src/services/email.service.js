@@ -383,11 +383,23 @@ export async function sendNewEstimateAdminEmail(estimateData) {
     throw new Error("Invalid estimate data: estimateNumber is required");
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) {
+  const adminEmails = [...new Set(
+    String(process.env.ADMIN_EMAIL || "")
+      .split(",")
+      .map((email) => email.trim())
+      .filter(Boolean)
+  )];
+  if (adminEmails.length === 0) {
     console.warn("[Email Service] Notification skipped: ADMIN_EMAIL is not configured in environment.");
     return { skipped: true, reason: "ADMIN_EMAIL not configured" };
   }
+
+  const ccEmails = [...new Set(
+    String(process.env.ADMIN_CC_EMAILS || "")
+      .split(",")
+      .map((email) => email.trim())
+      .filter(Boolean)
+  )];
 
   const transporter = getTransporter();
   if (!transporter) {
@@ -405,13 +417,17 @@ export async function sendNewEstimateAdminEmail(estimateData) {
 
   const mailOptions = {
     from: `"${fromName}" <${fromEmail}>`,
-    to: adminEmail,
+    to: adminEmails,
     subject,
     text,
     html,
   };
 
+  if (ccEmails.length > 0) {
+    mailOptions.cc = ccEmails;
+  }
+
   const info = await transporter.sendMail(mailOptions);
-  console.log(`[Email Service] Admin notification email sent successfully for ${estimateData.estimateNumber} to ${adminEmail} (MessageId: ${info.messageId})`);
+  console.log(`[Email Service] Admin notification email sent successfully for ${estimateData.estimateNumber} to ${adminEmails.length} recipient(s)${ccEmails.length > 0 ? ` + ${ccEmails.length} CC recipient(s)` : ""} (MessageId: ${info.messageId})`);
   return info;
 }
