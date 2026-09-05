@@ -3,6 +3,26 @@ import autoTable from "jspdf-autotable";
 import { CategoryService, ProductService, SettingsService } from "../services/api";
 import { DEFAULT_THEME } from "./theme";
 
+// Real, embedded Unicode Tamil font (not the OS's fonts, not a canvas/image
+// rasterization) so Tamil category/product names render as genuine,
+// selectable text in the generated PDF instead of Latin-only jsPDF glyphs.
+const TAMIL_FONT_NAME = "NotoSansTamil";
+let tamilFontRegistered = false;
+
+async function ensureTamilFontEmbedded(doc) {
+  if (!tamilFontRegistered) {
+    const [{ NotoSansTamilRegular }, { NotoSansTamilBold }] = await Promise.all([
+      import("../assets/fonts/NotoSansTamil-Regular.js"),
+      import("../assets/fonts/NotoSansTamil-Bold.js"),
+    ]);
+    doc.addFileToVFS("NotoSansTamil-Regular.ttf", NotoSansTamilRegular);
+    doc.addFont("NotoSansTamil-Regular.ttf", TAMIL_FONT_NAME, "normal");
+    doc.addFileToVFS("NotoSansTamil-Bold.ttf", NotoSansTamilBold);
+    doc.addFont("NotoSansTamil-Bold.ttf", TAMIL_FONT_NAME, "bold");
+    tamilFontRegistered = true;
+  }
+}
+
 function loadImage(url) {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
@@ -28,51 +48,79 @@ function tint(rgb, amount) {
   return rgb.map((c) => Math.round(c + (255 - c) * amount));
 }
 
-async function ensureTamilFontReady() {
-  if (!document?.fonts?.load) return;
-  try {
-    await Promise.all([
-      document.fonts.load('600 14px "Noto Sans Tamil"'),
-      document.fonts.load('500 12px "Noto Sans Tamil"'),
-      document.fonts.ready,
-    ]);
-  } catch {
-    // Best effort only. The canvas renderer will still attempt a fallback font.
+/**
+ * Draws a category band row (English name + optional Tamil name) as a single
+ * centered line, mixing the Latin "helvetica" font for the English portion
+ * with the embedded NotoSansTamil font for the Tamil portion so both render
+ * correctly side by side. The cell's `content` is left as English-only (see
+ * buildTableRows) purely so autoTable sizes/fills the cell normally; we then
+ * repaint the cell here with the full bilingual line so nothing is drawn twice.
+ */
+function drawCategoryBand(doc, data) {
+  const bandInfo = data.cell.raw?.categoryBand;
+  if (!bandInfo) return;
+
+  const cell = data.cell;
+  const { nameEn, nameTa } = bandInfo;
+  const fill = cell.styles.fillColor;
+  const textColor = cell.styles.textColor;
+  const fontSize = cell.styles.fontSize || 9.5;
+
+  if (fill) {
+    doc.setFillColor(fill[0], fill[1], fill[2]);
+    doc.rect(cell.x, cell.y, cell.width, cell.height, "F");
   }
+
+  doc.setFontSize(fontSize);
+  doc.setFont("helvetica", "bold");
+  const engWidth = doc.getTextWidth(nameEn);
+
+  const sep = nameTa ? "   \u2022   " : "";
+  const sepWidth = sep ? doc.getTextWidth(sep) : 0;
+
+  let tamilWidth = 0;
+  if (nameTa) {
+    doc.setFont(TAMIL_FONT_NAME, "normal");
+    tamilWidth = doc.getTextWidth(nameTa);
+  }
+
+  const totalWidth = engWidth + sepWidth + tamilWidth;
+  const centerY = cell.y + cell.height / 2;
+  let x = cell.x + cell.width / 2 - totalWidth / 2;
+
+  if (textColor) doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+  doc.setFont("helvetica", "bold");
+  doc.text(nameEn, x, centerY, { baseline: "middle" });
+  x += engWidth;
+
+  if (sep) {
+    doc.text(sep, x, centerY, { baseline: "middle" });
+    x += sepWidth;
+  }
+
+  if (nameTa) {
+    doc.setFont(TAMIL_FONT_NAME, "normal");
+    doc.text(nameTa, x, centerY, { baseline: "middle" });
+  }
+
+  doc.setFont("helvetica", "normal");
 }
 
-const tamilImageCache = new Map();
+/** Draws a product's Tamil name using the embedded Tamil font as real vector text. */
+function drawProductTamilName(doc, data) {
+  const tamilText = data.cell.raw?.tamilText;
+  if (!tamilText) return;
 
-function createTamilTextImage(text) {
-  if (!text) return null;
-  if (tamilImageCache.has(text)) return tamilImageCache.get(text);
+  const cell = data.cell;
+  const fontSize = cell.styles.fontSize || 7.4;
+  const textColor = cell.styles.textColor || [30, 41, 59];
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-
-  const fontSize = 24;
-  ctx.font = `600 ${fontSize}px "Noto Sans Tamil", sans-serif`;
-  const width = Math.max(Math.ceil(ctx.measureText(text).width) + 12, 24);
-  const height = 34;
-
-  canvas.width = width;
-  canvas.height = height;
-
-  const drawCtx = canvas.getContext("2d");
-  if (!drawCtx) return null;
-  drawCtx.font = `600 ${fontSize}px "Noto Sans Tamil", sans-serif`;
-  drawCtx.fillStyle = "#1f2937";
-  drawCtx.textBaseline = "middle";
-  drawCtx.fillText(text, 6, height / 2 + 1);
-
-  const image = {
-    dataUrl: canvas.toDataURL("image/png"),
-    width,
-    height,
-  };
-  tamilImageCache.set(text, image);
-  return image;
+  doc.setFont(TAMIL_FONT_NAME, "normal");
+  doc.setFontSize(Math.max(fontSize, 8.2));
+  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  doc.text(tamilText, cell.x + 1.5, cell.y + cell.height / 2, { baseline: "middle" });
+  doc.setFont("helvetica", "normal");
 }
 
 function formatPrice(value) {
@@ -92,8 +140,15 @@ function buildTableRows(groups, accentRgb) {
 
     rows.push([
       {
-        content: `${group.category.nameEn.toUpperCase()}${group.category.nameTa ? `  •  ${group.category.nameTa}` : ""}`,
+        // Content is English-only so autoTable sizes/fills this cell the
+        // same way it always has; the full bilingual line (English + Tamil)
+        // is then drawn over it in didDrawCell via drawCategoryBand().
+        content: group.category.nameEn.toUpperCase(),
         colSpan: 7,
+        categoryBand: {
+          nameEn: group.category.nameEn.toUpperCase(),
+          nameTa: group.category.nameTa || "",
+        },
         styles: {
           fillColor: bandColor,
           textColor: bandText,
@@ -132,7 +187,12 @@ export async function downloadPriceListPDF(options = {}) {
 
   try {
     const currentYear = new Date().getFullYear();
-    await ensureTamilFontReady();
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+    await ensureTamilFontEmbedded(doc);
 
     const [catRes, prodRes, settingsRes] = await Promise.all([
       CategoryService.list(),
@@ -181,12 +241,6 @@ export async function downloadPriceListPDF(options = {}) {
       .map((phone) => String(phone).trim());
     const whatsappNumber = settings.whatsapp_number ? String(settings.whatsapp_number).trim() : "";
     const addressLines = [settings.address, settings.business_hours].filter(Boolean);
-
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -323,25 +377,13 @@ export async function downloadPriceListPDF(options = {}) {
         fillColor: [249, 250, 251],
       },
       didDrawCell: (data) => {
-        if (data.section !== "body" || data.column.index !== 2) return;
-        const tamilText = data.cell.raw?.tamilText;
-        if (!tamilText) return;
-
-        const image = createTamilTextImage(tamilText);
-        if (!image) return;
-
-        const maxWidth = Math.max(data.cell.width - 3, 1);
-        const maxHeight = Math.max(data.cell.height - 2, 1);
-        const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
-        const drawWidth = image.width * scale;
-        const drawHeight = image.height * scale;
-        const x = data.cell.x + 1.5;
-        const y = data.cell.y + (data.cell.height - drawHeight) / 2;
-
-        try {
-          doc.addImage(image.dataUrl, "PNG", x, y, drawWidth, drawHeight);
-        } catch {
-          // Leave the cell blank if embedding fails.
+        if (data.section !== "body") return;
+        if (data.cell.raw?.categoryBand) {
+          drawCategoryBand(doc, data);
+          return;
+        }
+        if (data.column.index === 2) {
+          drawProductTamilName(doc, data);
         }
       },
       didDrawPage: () => {
