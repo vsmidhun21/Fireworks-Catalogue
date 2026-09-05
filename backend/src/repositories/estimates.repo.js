@@ -176,7 +176,19 @@ export const EstimateRepo = {
 export const SettingsRepo = {
   getAll() {
     const rows = db.prepare("SELECT * FROM website_settings").all();
-    return Object.fromEntries(rows.map((r) => [r.setting_key, r.setting_value]));
+    const result = {};
+    for (const r of rows) {
+      let val = r.setting_value;
+      if (typeof val === "string" && (val.startsWith("[") || val.startsWith("{"))) {
+        try {
+          val = JSON.parse(val);
+        } catch {
+          // keep as raw string if JSON parsing fails
+        }
+      }
+      result[r.setting_key] = val;
+    }
+    return result;
   },
   setMany(obj) {
     const stmt = db.prepare(
@@ -186,7 +198,11 @@ export const SettingsRepo = {
     db.exec("BEGIN");
     try {
       for (const [key, value] of Object.entries(obj)) {
-        stmt.run(key, String(value), nowIso());
+        const valToStore =
+          typeof value === "object" && value !== null
+            ? JSON.stringify(value)
+            : String(value ?? "");
+        stmt.run(key, valToStore, nowIso());
       }
       db.exec("COMMIT");
     } catch (e) {
@@ -195,3 +211,4 @@ export const SettingsRepo = {
     }
   },
 };
+

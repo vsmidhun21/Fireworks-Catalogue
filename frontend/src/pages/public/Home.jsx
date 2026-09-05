@@ -301,11 +301,25 @@ export default function Home() {
           {loading ? (
             <LoadingGrid count={4} />
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-              {featured.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                {featured.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+
+              {featured.length > 0 && (
+                <div className="mt-8 flex justify-center">
+                  <Link
+                    to="/products"
+                    className="inline-flex items-center gap-2 rounded-full border-2 border-brand-primary px-6 py-3 text-sm font-bold text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
+                  >
+                    <span>{t("home.viewAllProducts")}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

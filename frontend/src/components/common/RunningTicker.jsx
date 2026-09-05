@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Flame, FileDown } from "lucide-react";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
+import { useSettings } from "../../context/SettingsContext";
 
 export default function RunningTicker() {
   const { t } = useTranslation();
+  const { settings } = useSettings();
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async (e) => {
@@ -19,33 +21,64 @@ export default function RunningTicker() {
     }
   };
 
-  const tickerItems = [
+  const defaultItems = [
     {
       badge: t("ticker.item1Badge"),
-      badgeClass: "bg-amber-400 text-slate-950 font-extrabold",
+      badgeStyle: { backgroundColor: "#fbbf24", color: "#020617" },
       text: t("ticker.item1Text"),
     },
     {
       badge: t("ticker.item2Badge"),
-      badgeClass: "bg-rose-500 text-white font-bold",
+      badgeStyle: { backgroundColor: "#f43f5e", color: "#ffffff" },
       text: t("ticker.item2Text"),
     },
     {
       badge: t("ticker.item3Badge"),
-      badgeClass: "bg-emerald-400 text-slate-950 font-bold",
+      badgeStyle: { backgroundColor: "#34d399", color: "#020617" },
       text: t("ticker.item3Text"),
     },
     {
       badge: t("ticker.item4Badge"),
-      badgeClass: "bg-cyan-400 text-slate-950 font-bold",
+      badgeStyle: { backgroundColor: "#22d3ee", color: "#020617" },
       text: t("ticker.item4Text"),
     },
     {
       badge: t("ticker.item5Badge"),
-      badgeClass: "bg-brand-gold text-slate-950 font-bold",
+      badgeStyle: { backgroundColor: "#f59e0b", color: "#020617" },
       text: t("ticker.item5Text"),
     },
   ];
+
+  let rawConfigItems = settings?.header_ticker_items;
+  if (typeof rawConfigItems === "string") {
+    try {
+      rawConfigItems = JSON.parse(rawConfigItems);
+    } catch {
+      rawConfigItems = null;
+    }
+  }
+
+  const activeConfigItems = Array.isArray(rawConfigItems)
+    ? rawConfigItems.filter((i) => i && i.is_active !== false && (i.highlight_text || i.message_text))
+    : [];
+
+  const configuredItems = activeConfigItems.map((i) => ({
+    badge: i.highlight_text || "",
+    badgeStyle: {
+      backgroundColor: i.highlight_color || "#fbbf24",
+      color: i.highlight_text_color || "#020617",
+    },
+    text: i.message_text || "",
+  }));
+
+  const items = configuredItems.length > 0 ? configuredItems : defaultItems;
+
+  // Duplicate items enough times to ensure a continuous, seamless marquee loop across all screen widths
+  let marqueeItems = [...items, ...items];
+  while (marqueeItems.length < 10) {
+    marqueeItems = [...marqueeItems, ...items];
+  }
+
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-brand-navy to-slate-950 text-white border-b border-amber-500/20 py-2 text-xs font-medium select-none">
@@ -59,10 +92,12 @@ export default function RunningTicker() {
         {/* Continuous Marquee Track */}
         <div className="overflow-hidden relative w-full flex">
           <div className="animate-marquee flex items-center gap-10">
-            {/* Duplicated twice for infinite seamless loop */}
-            {[...tickerItems, ...tickerItems].map((item, idx) => (
+            {marqueeItems.map((item, idx) => (
               <div key={idx} className="flex items-center gap-3 shrink-0">
-                <span className={`px-2 py-0.5 rounded text-[10px] tracking-wide uppercase shadow-sm ${item.badgeClass}`}>
+                <span
+                  className="px-2 py-0.5 rounded text-[10px] tracking-wide uppercase shadow-sm font-extrabold"
+                  style={item.badgeStyle}
+                >
                   {item.badge}
                 </span>
                 <span className="text-slate-200 hover:text-brand-gold transition-colors font-medium">

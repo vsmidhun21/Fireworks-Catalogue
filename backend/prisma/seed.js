@@ -310,6 +310,48 @@ async function main() {
     google_maps_url: "",
     facebook_url: "",
     instagram_url: "",
+    header_ticker_items: [
+      {
+        id: "ticker-1",
+        highlight_text: "MEGA DIWALI SALE",
+        highlight_color: "#fbbf24",
+        highlight_text_color: "#020617",
+        message_text: "Special Diwali Festive Discounts Live! Up to 90% Off Retail Prices!",
+        is_active: true,
+      },
+      {
+        id: "ticker-2",
+        highlight_text: "SIVAKASI DIRECT",
+        highlight_color: "#f43f5e",
+        highlight_text_color: "#ffffff",
+        message_text: "100% Genuine Certified Green Crackers Directly from Sivakasi Factory",
+        is_active: true,
+      },
+      {
+        id: "ticker-3",
+        highlight_text: "PAN-INDIA DISPATCH",
+        highlight_color: "#34d399",
+        highlight_text_color: "#020617",
+        message_text: "Fast & Safe Transport Across India · Minimum Order ₹3,000",
+        is_active: true,
+      },
+      {
+        id: "ticker-4",
+        highlight_text: "QUICK ESTIMATE",
+        highlight_color: "#22d3ee",
+        highlight_text_color: "#020617",
+        message_text: "Select Crackers & Get Instant Quotation in 1-Click with Zero Payment Advance!",
+        is_active: true,
+      },
+      {
+        id: "ticker-5",
+        highlight_text: "CALL / WHATSAPP",
+        highlight_color: "#f59e0b",
+        highlight_text_color: "#020617",
+        message_text: "Helpline: +91 87540 66248 | +91 88257 21391",
+        is_active: true,
+      },
+    ],
   });
 
   console.log("Official catalog seed complete! All products and categories loaded.");
