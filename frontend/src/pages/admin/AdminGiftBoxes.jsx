@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Gift, Loader2, Pencil, Power, Trash2, Upload, X, Check } from "lucide-react";
 import { AdminGiftBoxService } from "../../services/api";
 import { getProductImageUrl, onImageError } from "../../utils/image";
@@ -17,7 +16,6 @@ const emptyForm = {
 };
 
 export default function AdminGiftBoxes() {
-  const { t } = useTranslation();
   const [giftBoxes, setGiftBoxes] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -114,7 +112,7 @@ export default function AdminGiftBoxes() {
   }
 
   async function handleDelete(item) {
-    if (!confirm(t("Delete Confirm", { name: item.nameEn }))) return;
+    if (!confirm(`Delete/archive "${item.nameEn}"?`)) return;
     await AdminGiftBoxService.remove(item.id);
     const nextPage = giftBoxes.length === 1 && page > 1 ? page - 1 : page;
     load(nextPage);
@@ -124,12 +122,12 @@ export default function AdminGiftBoxes() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-brand-navy">{t("Gift Boxes")}</h1>
-          <p className="text-sm text-brand-muted">{t("Handpicked festive Gift Boxes — ask us for the latest availability and pricing.")}</p>
+          <h1 className="font-display text-2xl font-bold text-brand-navy">Gift Boxes</h1>
+          <p className="text-sm text-brand-muted">Handpicked festive Gift Boxes - ask us for the latest availability and pricing.</p>
         </div>
         <button onClick={openCreate} className="btn-primary !py-2 !px-4 text-sm flex items-center gap-2">
           <Gift className="w-4 h-4" />
-          <span>{t("Add Gift Box")}</span>
+          <span>Add Gift Box</span>
         </button>
       </div>
 
@@ -137,7 +135,7 @@ export default function AdminGiftBoxes() {
         <form onSubmit={handleSave} className="card-surface grid gap-4 rounded-2xl border-2 border-brand-primary/20 p-6 sm:grid-cols-2">
           <div className="sm:col-span-2 flex items-center justify-between border-b border-brand-border pb-3">
             <h2 className="font-display text-lg font-bold text-brand-navy">
-              {editing ? `${t("admin.giftBoxes.editTitle")}: ${editing.nameEn}` : t("admin.giftBoxes.createTitle")}
+              {editing ? `Edit Gift Box: ${editing.nameEn}` : "Add New Gift Box"}
             </h2>
             <button type="button" onClick={() => setShowForm(false)} className="rounded-full p-1 text-brand-muted hover:bg-slate-100">
               <X className="h-5 w-5" />
@@ -145,7 +143,7 @@ export default function AdminGiftBoxes() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-brand-navy">{t("admin.giftBoxes.nameEnLabel")} *</label>
+            <label className="mb-1 block text-sm font-semibold text-brand-navy">English Name *</label>
             <input
               required
               value={form.nameEn}
@@ -155,7 +153,7 @@ export default function AdminGiftBoxes() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-brand-navy">{t("admin.giftBoxes.nameTaLabel")}</label>
+            <label className="mb-1 block text-sm font-semibold text-brand-navy">Tamil Name</label>
             <input
               value={form.nameTa}
               onChange={(e) => setForm({ ...form, nameTa: e.target.value })}
@@ -164,7 +162,7 @@ export default function AdminGiftBoxes() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-sm font-semibold text-brand-navy">{t("admin.giftBoxes.descriptionEnLabel")}</label>
+            <label className="mb-1 block text-sm font-semibold text-brand-navy">Description (English)</label>
             <textarea
               rows={2}
               value={form.descriptionEn}
@@ -174,7 +172,7 @@ export default function AdminGiftBoxes() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-sm font-semibold text-brand-navy">{t("admin.giftBoxes.descriptionTaLabel")}</label>
+            <label className="mb-1 block text-sm font-semibold text-brand-navy">Description (Tamil)</label>
             <textarea
               rows={2}
               value={form.descriptionTa}
@@ -184,7 +182,7 @@ export default function AdminGiftBoxes() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-brand-navy">{t("admin.giftBoxes.sortOrderLabel")}</label>
+            <label className="mb-1 block text-sm font-semibold text-brand-navy">Sort Order</label>
             <input
               type="number"
               value={form.sortOrder}
@@ -194,7 +192,7 @@ export default function AdminGiftBoxes() {
           </div>
 
           <div className="sm:col-span-2 rounded-xl border border-brand-border bg-slate-50 p-4">
-            <label className="mb-2 block text-sm font-semibold text-brand-navy">{t("admin.giftBoxes.imageLabel")}</label>
+            <label className="mb-2 block text-sm font-semibold text-brand-navy">Gift Box Image</label>
             <div className="grid items-center gap-4 sm:grid-cols-[180px_1fr]">
               <div className="overflow-hidden rounded-xl border border-brand-border bg-white">
                 <img
@@ -212,9 +210,9 @@ export default function AdminGiftBoxes() {
                   className="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-4 py-2 text-sm font-semibold text-white hover:bg-brand-navy/90"
                 >
                   <Upload className="h-4 w-4" />
-                  <span>{previewUrl || editing?.imageUrl ? t("admin.giftBoxes.changeImage") : t("admin.giftBoxes.uploadImage")}</span>
+                  <span>{previewUrl || editing?.imageUrl ? "Change Image" : "Upload Image"}</span>
                 </button>
-                <p className="text-xs text-brand-muted">{t("admin.giftBoxes.imageHint")}</p>
+                <p className="text-xs text-brand-muted">JPG, PNG or WebP. Recommended landscape image.</p>
               </div>
             </div>
           </div>
@@ -226,7 +224,7 @@ export default function AdminGiftBoxes() {
               onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
               className="h-4 w-4"
             />
-            <span>{t("admin.giftBoxes.activeLabel")}</span>
+            <span>Active</span>
           </label>
 
           {error && <p className="sm:col-span-2 text-sm text-brand-error">{error}</p>}
@@ -236,17 +234,17 @@ export default function AdminGiftBoxes() {
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>{t("admin.giftBoxes.savingButton")}</span>
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>{editing ? t("admin.giftBoxes.updateButton") : t("admin.giftBoxes.saveButton")}</span>
+                  <span>{editing ? "Update Gift Box" : "Save Gift Box"}</span>
                 </>
               )}
             </button>
             <button type="button" onClick={() => setShowForm(false)} className="rounded-full border border-brand-border px-5 py-2 text-sm font-semibold hover:bg-slate-50">
-              {t("admin.giftBoxes.cancelButton")}
+              Cancel
             </button>
           </div>
         </form>
@@ -257,10 +255,10 @@ export default function AdminGiftBoxes() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-brand-border bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-brand-muted">
-                <th className="px-4 py-3.5">{t("admin.giftBoxes.tableName")}</th>
-                <th className="px-4 py-3.5">{t("admin.giftBoxes.tableSort")}</th>
-                <th className="px-4 py-3.5 text-center">{t("admin.giftBoxes.tableStatus")}</th>
-                <th className="px-4 py-3.5 text-right">{t("admin.giftBoxes.tableActions")}</th>
+                <th className="px-4 py-3.5">Name</th>
+                <th className="px-4 py-3.5">Sort</th>
+                <th className="px-4 py-3.5 text-center">Status</th>
+                <th className="px-4 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-border/60">
@@ -268,14 +266,14 @@ export default function AdminGiftBoxes() {
                 <tr>
                   <td colSpan={4} className="py-12 text-center text-brand-muted">
                     <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-brand-primary" />
-                    <span>{t("admin.giftBoxes.loadingList")}</span>
+                    <span>Loading gift boxes...</span>
                   </td>
                 </tr>
               ) : giftBoxes.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-12 text-center text-brand-muted">
                     <Gift className="mx-auto mb-2 h-8 w-8 text-brand-border" />
-                    <span>{t("admin.giftBoxes.emptyList")}</span>
+                    <span>No gift boxes found.</span>
                   </td>
                 </tr>
               ) : (
@@ -305,18 +303,18 @@ export default function AdminGiftBoxes() {
                         }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${item.isActive ? "bg-emerald-500" : "bg-slate-400"}`} />
-                        {item.isActive ? t("admin.giftBoxes.statusActive") : t("admin.giftBoxes.statusInactive")}
+                        {item.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex items-center gap-1.5">
-                        <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 text-brand-primary hover:bg-brand-primary/10" title={t("admin.giftBoxes.editAction")}>
+                        <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 text-brand-primary hover:bg-brand-primary/10" title="Edit gift box">
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button onClick={() => toggleActive(item)} className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50" title={t("admin.giftBoxes.toggleAction")}>
+                        <button onClick={() => toggleActive(item)} className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50" title="Toggle status">
                           <Power className="h-4 w-4" />
                         </button>
-                        <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50" title={t("admin.giftBoxes.deleteAction")}>
+                        <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50" title="Delete gift box">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>

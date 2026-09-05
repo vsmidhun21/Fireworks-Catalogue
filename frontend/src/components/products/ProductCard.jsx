@@ -78,7 +78,7 @@ export default function ProductCard({ product }) {
                     else updateQuantity(product.id, qty - 1);
                   }}
                   className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-l-full transition-colors font-bold"
-                  aria-label="Decrease"
+                  aria-label={t("aria.decrease")}
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -86,7 +86,7 @@ export default function ProductCard({ product }) {
                 <button
                   onClick={() => updateQuantity(product.id, qty + 1)}
                   className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-r-full transition-colors font-bold"
-                  aria-label="Increase"
+                  aria-label={t("aria.increase")}
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

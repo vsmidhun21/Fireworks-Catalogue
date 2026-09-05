@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Sparkles, ArrowRight, Flame } from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import Logo from "./Logo";
@@ -10,6 +11,7 @@ import Logo from "./Logo";
  * short, confident copy and a CTA into the full About page.
  */
 export default function BrandStory() {
+  const { t } = useTranslation();
   const { settings } = useSettings();
   const businessName = settings.business_name || "Sri RR Crackers";
 
@@ -32,32 +34,28 @@ export default function BrandStory() {
             </div>
             <span className="inline-flex items-center gap-1.5 text-brand-gold text-xs font-extrabold uppercase tracking-widest">
               <Sparkles className="w-3.5 h-3.5" />
-              Since day one, made for celebration
+              {t("brandStory.sinceDayOne")}
             </span>
           </div>
         </div>
 
         {/* Copy */}
         <div className="order-1 lg:order-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Our Brand</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">{t("brandStory.ourBrand")}</span>
           <h2 className="font-display text-2xl sm:text-4xl font-bold text-brand-navy mt-1 mb-5 leading-tight">
-            The {businessName} Story
+            {t("brandStory.title", { businessName })}
           </h2>
           <p className="text-brand-text/80 leading-relaxed mb-4">
-            {businessName} brings together a carefully selected range of fireworks, sparklers and
-            gift boxes sourced from Sivakasi — India's home of fireworks craftsmanship. Every
-            product on our shelves is chosen with one goal: helping families celebrate safely,
-            joyfully and without compromise.
+            {t("brandStory.paragraph1", { businessName })}
           </p>
           <p className="text-brand-text/70 leading-relaxed mb-8">
-            We believe a great celebration starts with trust — clear pricing, genuine products,
-            and a team that's easy to reach whenever you need us.
+            {t("brandStory.paragraph2")}
           </p>
           <Link
             to="/about"
             className="inline-flex items-center gap-2 rounded-full bg-brand-navy text-white font-bold px-6 py-3.5 hover:bg-slate-800 transition-all hover:scale-105 shadow-lg"
           >
-            <span>Read Our Story</span>
+            <span>{t("brandStory.readOurStory")}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

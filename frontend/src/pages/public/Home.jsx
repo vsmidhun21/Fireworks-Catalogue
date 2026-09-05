@@ -154,7 +154,7 @@ export default function Home() {
     try {
       await downloadPriceListPDF();
     } catch (e) {
-      alert("Failed to generate Price List PDF. Please try again.");
+      alert(t("home.pdfError"));
     } finally {
       setDownloading(false);
     }
@@ -173,7 +173,7 @@ export default function Home() {
   return (
     <div className="overflow-hidden">
       <SEO
-        title="Premium Fireworks for Memorable Celebrations"
+        title={t("home.seoTitle")}
         description={`${businessName} — browse our fireworks catalogue and request an estimate online. No online payment required.`}
       />
       {/* ── HERO SECTION ── */}
@@ -198,11 +198,11 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 mb-6">
               <span className="inline-flex items-center gap-1.5 bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold tracking-wide uppercase px-4 py-1.5 rounded-full shadow-lg shadow-amber-500/10">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                DIWALI FESTIVAL SPECIAL 2025
+                {t("home.festivalBadge")}
               </span>
               <span className="inline-flex items-center gap-1 bg-rose-500/20 border border-rose-400/40 text-rose-300 text-xs font-bold px-3 py-1.5 rounded-full">
                 <Percent className="w-3 h-3" />
-                UP TO 90% DISCOUNT
+                {t("home.discountBadge")}
               </span>
             </div>
 
@@ -246,7 +246,7 @@ export default function Home() {
                 className="rounded-full bg-amber-500/20 hover:bg-amber-500/30 backdrop-blur border border-amber-400/40 text-amber-300 font-semibold px-6 py-4 text-sm sm:text-base transition-all flex items-center gap-2 disabled:opacity-60"
               >
                 {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                <span>{downloading ? "Generating..." : "Price List PDF"}</span>
+                <span>{downloading ? t("home.generatingPdf") : t("home.priceListPdf")}</span>
               </button>
             </div>
 
@@ -259,15 +259,15 @@ export default function Home() {
             <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs sm:text-sm text-slate-300 max-w-xl mx-auto lg:mx-0">
               <div className="flex items-center justify-center lg:justify-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>100% Genuine Sivakasi</span>
+                <span>{t("home.trustGenuine")}</span>
               </div>
               <div className="flex items-center justify-center lg:justify-start gap-2">
                 <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Direct Factory Prices</span>
+                <span>{t("home.trustFactoryPrices")}</span>
               </div>
               <div className="flex items-center justify-center lg:justify-start gap-2">
                 <Truck className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Pan-India Delivery</span>
+                <span>{t("home.trustPanIndia")}</span>
               </div>
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function Home() {
         <div className="container-page">
           <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Bestsellers / பிரபலமானவை</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">{t("home.bestsellersBadge")}</span>
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
                 {t("home.featuredProducts")}
               </h2>
@@ -317,13 +317,13 @@ export default function Home() {
       <section className="container-page py-14 sm:py-16">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Explore Products / பொருட்களை பார்க்க</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">{t("home.exploreProductsBadge")}</span>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
               {t("home.shopByCategory")}
             </h2>
           </div>
           <Link to="/products" className="text-sm font-semibold text-brand-primary hover:underline flex items-center gap-1">
-            <span>View All Products</span>
+            <span>{t("home.viewAllProducts")}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -338,7 +338,7 @@ export default function Home() {
       {/* ── HOW TO ORDER ── */}
       <section className="container-page py-14 sm:py-16">
         <div className="text-center max-w-xl mx-auto mb-10">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Simple Process / எளிய படிகள்</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">{t("home.simpleProcessBadge")}</span>
           <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">
             {t("home.howItWorks")}
           </h2>
@@ -362,12 +362,12 @@ export default function Home() {
               </div>
               <h3 className="font-display font-bold text-brand-navy text-lg mb-2">{t(`home.step${step}Title`)}</h3>
               <p className="text-sm text-brand-muted leading-relaxed">{t(`home.step${step}Desc`)}</p>
-              {/* Tamil label */}
-              <p className="font-tamil text-xs text-brand-primary/70 mt-2">
-                {step === 1 && "பட்டாசு தேர்வு செய்யுங்கள்"}
-                {step === 2 && "உங்கள் விவரம் கொடுங்கள்"}
-                {step === 3 && "நாங்கள் அழைக்கிறோம்"}
-              </p>
+              {/* Secondary Tamil caption — only shown when English is active, mirroring the pattern used for product names */}
+              {i18n.language !== "ta" && (
+                <p className="font-tamil text-xs text-brand-primary/70 mt-2">
+                  {t(`home.step${step}Caption`)}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -375,7 +375,7 @@ export default function Home() {
         <div className="text-center mt-8">
           <Link to="/products" className="btn-primary inline-flex items-center gap-2 !py-3.5 !px-8 text-base shadow-lg shadow-brand-orange/25 hover:scale-105 transition-all">
             <ShoppingBag className="w-5 h-5" />
-            <span>Start Ordering Now / இப்போது ஆர்டர் செய்யுங்கள்</span>
+            <span>{t("home.startOrderingNow")}</span>
           </Link>
         </div>
       </section>
@@ -385,7 +385,7 @@ export default function Home() {
         <div className="container-page flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="text-center sm:text-left">
             <h3 className="font-display text-xl sm:text-2xl font-extrabold mb-1">{t("home.whatsappCta")}</h3>
-            <p className="font-tamil text-sm text-white/80">கேள்விகள் உள்ளதா? WhatsApp-இல் தொடர்பு கொள்ளுங்கள்!</p>
+            <p className="text-sm text-white/80">{t("home.whatsappCtaSub")}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <a
@@ -395,7 +395,7 @@ export default function Home() {
               className="flex items-center justify-center gap-2 bg-white text-[#128C7E] font-bold rounded-full px-6 py-3 shadow-lg hover:scale-105 transition-all text-sm sm:text-base"
             >
               <MessageCircle className="w-5 h-5" />
-              <span>WhatsApp Us</span>
+              <span>{t("home.whatsappUs")}</span>
             </a>
             {phone && (
               <a
@@ -403,7 +403,7 @@ export default function Home() {
                 className="flex items-center justify-center gap-2 bg-white/20 border border-white/50 text-white font-bold rounded-full px-6 py-3 hover:bg-white/30 transition-all text-sm sm:text-base"
               >
                 <PhoneCall className="w-5 h-5" />
-                <span>Call Us</span>
+                <span>{t("home.callUs")}</span>
               </a>
             )}
           </div>

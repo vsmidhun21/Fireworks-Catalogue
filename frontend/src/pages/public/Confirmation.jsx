@@ -27,12 +27,12 @@ export default function Confirmation() {
 
       {/* What happens next */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm text-amber-900 text-left">
-        <p className="font-bold mb-1">What happens next?</p>
+        <p className="font-bold mb-1">{t("confirmation.whatsNextTitle")}</p>
         <ul className="space-y-1 text-amber-800">
-          <li>✅ Our team reviews your order</li>
-          <li>📞 We call or WhatsApp you within 24 hours</li>
-          <li>💬 We confirm price, stock and delivery date</li>
-          <li>🚚 We arrange delivery to your address</li>
+          <li>✅ {t("confirmation.step1")}</li>
+          <li>📞 {t("confirmation.step2")}</li>
+          <li>💬 {t("confirmation.step3")}</li>
+          <li>🚚 {t("confirmation.step4")}</li>
         </ul>
       </div>
 

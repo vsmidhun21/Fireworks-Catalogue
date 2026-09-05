@@ -28,7 +28,7 @@ export default function Estimate() {
         </div>
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("estimate.title")}</h1>
-          <p className="text-sm text-brand-muted">{totals.count} item{totals.count !== 1 ? "s" : ""} in your order</p>
+          <p className="text-sm text-brand-muted">{t("estimate.itemsInOrder", { count: totals.count })}</p>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export default function Estimate() {
                       else updateQuantity(item.productId, item.quantity - 1);
                     }}
                     className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-l-full transition-colors"
-                    aria-label="Decrease"
+                    aria-label={t("aria.decrease")}
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
@@ -68,7 +68,7 @@ export default function Estimate() {
                   <button
                     onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                     className="w-8 h-8 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white rounded-r-full transition-colors"
-                    aria-label="Increase"
+                    aria-label={t("aria.increase")}
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -100,12 +100,12 @@ export default function Estimate() {
         <div className="card-surface p-6 h-fit sticky top-24 rounded-2xl border border-brand-border shadow-sm">
           <h2 className="font-display font-semibold text-lg text-brand-navy mb-4">{t("estimate.estimatedTotal")}</h2>
           <div className="flex justify-between text-sm text-brand-muted mb-2">
-            <span>Subtotal ({totals.count} items)</span>
+            <span>{t("estimate.subtotalItems", { count: totals.count })}</span>
             <span>{formatCurrency(totals.subtotal)}</span>
           </div>
           {totals.discount > 0 && (
             <div className="flex justify-between text-sm text-brand-success mb-2 font-medium">
-              <span>You Save</span>
+              <span>{t("estimate.youSave")}</span>
               <span>-{formatCurrency(totals.discount)}</span>
             </div>
           )}
@@ -114,7 +114,7 @@ export default function Estimate() {
             <span>{formatCurrency(totals.estimatedTotal)}</span>
           </div>
           <p className="text-xs text-brand-muted mt-2 leading-relaxed">
-            Final price confirmed by our team via call or WhatsApp. No advance payment.
+            {t("estimate.finalPriceNote")}
           </p>
           <button
             onClick={() => navigate("/estimate/customer-details")}

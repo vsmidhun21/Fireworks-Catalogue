@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Power, Check, X, Loader2, FolderTree, Upload } from "lucide-react";
 import { AdminCategoryService } from "../../services/api";
 import { getProductImageUrl, onImageError } from "../../utils/image";
@@ -9,7 +8,6 @@ const emptyForm = { nameEn: "", nameTa: "", descriptionEn: "", descriptionTa: ""
 const PAGE_SIZE = 10;
 
 export default function AdminCategories() {
-  const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -188,7 +186,7 @@ export default function AdminCategories() {
           </div>
 
           <div className="sm:col-span-2 rounded-xl border border-brand-border bg-slate-50 p-4">
-            <label className="mb-2 block text-sm font-semibold text-brand-navy">{t("admin.categories.imageLabel")}</label>
+            <label className="mb-2 block text-sm font-semibold text-brand-navy">Category Image</label>
             <div className="grid items-center gap-4 sm:grid-cols-[180px_1fr]">
               <div className="overflow-hidden rounded-xl border border-brand-border bg-white">
                 <img
@@ -207,7 +205,7 @@ export default function AdminCategories() {
                     className="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-4 py-2 text-sm font-semibold text-white hover:bg-brand-navy/90"
                   >
                     <Upload className="h-4 w-4" />
-                    <span>{hasImage ? t("admin.categories.changeImage") : t("admin.categories.uploadImage")}</span>
+                    <span>{hasImage ? "Change Image" : "Upload Image"}</span>
                   </button>
                   {hasImage && (
                     <button
@@ -216,11 +214,11 @@ export default function AdminCategories() {
                       className="inline-flex items-center gap-2 rounded-lg border border-brand-border px-4 py-2 text-sm font-semibold text-brand-muted hover:bg-slate-100"
                     >
                       <X className="h-4 w-4" />
-                      <span>{t("admin.categories.removeImage")}</span>
+                      <span>Remove Image</span>
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-brand-muted">{t("admin.categories.imageHint")}</p>
+                <p className="text-xs text-brand-muted">JPG, PNG or WebP. Recommended landscape image.</p>
               </div>
             </div>
           </div>

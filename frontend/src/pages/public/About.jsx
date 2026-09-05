@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Building2, ShieldCheck, Users, Sparkles, HeartHandshake, Award,
   Layers, Headphones, ArrowRight, CheckCircle2,
@@ -7,24 +8,24 @@ import Logo from "../../components/common/Logo";
 import { useSettings } from "../../context/SettingsContext";
 import SEO from "../../components/common/SEO";
 
-const VALUES = [
-  { icon: Award, title: "Quality", desc: "Carefully selected products, chosen for a safe and joyful experience." },
-  { icon: ShieldCheck, title: "Trust", desc: "Clear pricing and honest communication, from enquiry to delivery." },
-  { icon: HeartHandshake, title: "Customer Satisfaction", desc: "Every order is discussed personally — never left to guesswork." },
-  { icon: Sparkles, title: "Responsible Celebration", desc: "We encourage safe, mindful use of fireworks at every celebration." },
-  { icon: Layers, title: "Variety", desc: "A wide catalogue spanning sparklers, aerial fancy items and gift boxes." },
-  { icon: Headphones, title: "Service", desc: "A team that's easy to reach by phone or WhatsApp, whenever you need us." },
-];
+const VALUE_ICONS = [Award, ShieldCheck, HeartHandshake, Sparkles, Layers, Headphones];
 
 export default function About() {
+  const { t } = useTranslation();
   const { settings } = useSettings();
   const businessName = settings.business_name || "Sri RR Crackers";
+
+  const values = VALUE_ICONS.map((icon, idx) => ({
+    icon,
+    title: t(`about.value${idx + 1}Title`),
+    desc: t(`about.value${idx + 1}Desc`),
+  }));
 
   return (
     <div>
       <SEO
-        title="About Us"
-        description={`Learn about ${businessName} — a Sivakasi fireworks retailer focused on quality, trust and responsible celebration.`}
+        title={t("about.title")}
+        description={`${t("about.intro")}`}
       />
 
       {/* Hero */}
@@ -44,10 +45,10 @@ export default function About() {
           </div>
           <span className="inline-flex items-center gap-1.5 bg-brand-gold/20 border border-brand-gold/40 text-brand-gold text-xs font-extrabold uppercase tracking-wide px-4 py-1.5 rounded-full mb-5">
             <Sparkles className="w-3.5 h-3.5" />
-            Our Story
+            {t("about.badge")}
           </span>
           <h1 className="font-display text-3xl sm:text-5xl font-extrabold leading-tight">
-            Celebrating Every Moment with {businessName}
+            {t("about.heroTitle", { businessName })}
           </h1>
         </div>
       </section>
@@ -56,19 +57,15 @@ export default function About() {
       <section className="container-page py-14 sm:py-20">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-16">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Our Story</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">{t("about.storyBadge")}</span>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1 mb-5">
-              Rooted in Sivakasi's fireworks tradition
+              {t("about.storyTitle")}
             </h2>
             <p className="text-brand-text/80 leading-relaxed mb-4">
-              {businessName} is a retailer of superior fancy crackers, sparklers and gift boxes,
-              based in Sivakasi — widely known as the fireworks capital of India. Our catalogue
-              brings together products chosen for their quality, variety and value.
+              {t("about.storyParagraph1", { businessName })}
             </p>
             <p className="text-brand-text/70 leading-relaxed">
-              We built this website so customers can browse our full range, put together an
-              order at their own pace, and let our team take care of confirming pricing,
-              availability and delivery — all without any online payment.
+              {t("about.storyParagraph2")}
             </p>
           </div>
           <div className="relative rounded-3xl overflow-hidden aspect-[4/3] bg-gradient-to-br from-brand-primary via-purple-700 to-brand-navy shadow-xl">
@@ -79,9 +76,9 @@ export default function About() {
             <Sparkles className="absolute w-40 h-40 text-white/10 -bottom-6 -right-6" strokeWidth={1} />
             <div className="relative z-10 h-full flex flex-col items-center justify-center gap-3 p-8 text-center text-white">
               <Building2 className="w-10 h-10 text-brand-gold" />
-              <p className="font-display font-bold text-lg">Sourced from Sivakasi</p>
+              <p className="font-display font-bold text-lg">{t("about.sourcedTitle")}</p>
               <p className="text-white/70 text-sm max-w-xs">
-                India's home of fireworks craftsmanship and manufacturing heritage.
+                {t("about.sourcedDesc")}
               </p>
             </div>
           </div>
@@ -89,21 +86,20 @@ export default function About() {
 
         {/* Mission */}
         <div className="rounded-3xl bg-brand-cream border border-brand-border p-8 sm:p-10 mb-16 text-center max-w-3xl mx-auto">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Our Mission</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">{t("about.missionBadge")}</span>
           <p className="font-display text-xl sm:text-2xl font-bold text-brand-navy mt-2 leading-snug">
-            To provide a reliable and enjoyable way for families to explore fireworks for
-            festive celebrations.
+            {t("about.missionText")}
           </p>
         </div>
 
         {/* Values */}
         <div className="mb-16">
           <div className="text-center max-w-xl mx-auto mb-10">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">Our Values</span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">What guides us</h2>
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">{t("about.valuesBadge")}</span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1">{t("about.valuesTitle")}</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {VALUES.map(({ icon: Icon, title, desc }) => (
+            {values.map(({ icon: Icon, title, desc }) => (
               <div key={title} className="card-surface p-6 rounded-2xl border border-brand-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all">
                 <div className="w-12 h-12 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6" />
@@ -121,22 +117,22 @@ export default function About() {
             <div className="w-12 h-12 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto mb-3">
               <Building2 className="w-6 h-6" />
             </div>
-            <h3 className="font-display font-semibold text-brand-navy mb-1">Sourced from Sivakasi</h3>
-            <p className="text-sm text-brand-muted">India's fireworks capital, known for quality craftsmanship.</p>
+            <h3 className="font-display font-semibold text-brand-navy mb-1">{t("about.whyCard1Title")}</h3>
+            <p className="text-sm text-brand-muted">{t("about.whyCard1Desc")}</p>
           </div>
           <div className="card-surface p-6 rounded-2xl border border-brand-border shadow-sm text-center">
             <div className="w-12 h-12 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto mb-3">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h3 className="font-display font-semibold text-brand-navy mb-1">Licensed Retailer</h3>
-            <p className="text-sm text-brand-muted">Operating with a valid retail fireworks licence.</p>
+            <h3 className="font-display font-semibold text-brand-navy mb-1">{t("about.whyCard2Title")}</h3>
+            <p className="text-sm text-brand-muted">{t("about.whyCard2Desc")}</p>
           </div>
           <div className="card-surface p-6 rounded-2xl border border-brand-border shadow-sm text-center">
             <div className="w-12 h-12 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto mb-3">
               <Users className="w-6 h-6" />
             </div>
-            <h3 className="font-display font-semibold text-brand-navy mb-1">Personal Service</h3>
-            <p className="text-sm text-brand-muted">Our team discusses every order directly with you.</p>
+            <h3 className="font-display font-semibold text-brand-navy mb-1">{t("about.whyCard3Title")}</h3>
+            <p className="text-sm text-brand-muted">{t("about.whyCard3Desc")}</p>
           </div>
         </div>
 
@@ -144,14 +140,13 @@ export default function About() {
         <div className="rounded-3xl bg-brand-navy text-white p-8 sm:p-10 mb-14">
           <div className="flex items-center gap-3 mb-4">
             <ShieldCheck className="w-7 h-7 text-brand-gold" />
-            <h2 className="font-display text-xl sm:text-2xl font-bold">Safety &amp; Responsible Celebration</h2>
+            <h2 className="font-display text-xl sm:text-2xl font-bold">{t("about.safetyTitle")}</h2>
           </div>
           <p className="text-white/80 leading-relaxed max-w-2xl mb-4">
-            We encourage every customer to handle fireworks responsibly — follow local
-            regulations, read manufacturer instructions, and celebrate under adult supervision.
+            {t("about.safetyText")}
           </p>
           <Link to="/safety" className="inline-flex items-center gap-2 text-brand-gold font-semibold hover:underline">
-            Read our full safety guidance
+            {t("about.readSafetyGuidance")}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -160,14 +155,14 @@ export default function About() {
         <div className="text-center">
           <div className="inline-flex items-center gap-2 text-emerald-600 text-sm font-semibold mb-4">
             <CheckCircle2 className="w-4 h-4" />
-            Ready to plan your celebration?
+            {t("about.readyToPlan")}
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link to="/products" className="btn-primary !py-3.5 !px-8">
-              Browse Products
+              {t("about.browseProducts")}
             </Link>
             <Link to="/contact" className="rounded-full border border-brand-border text-brand-navy font-bold px-8 py-3.5 hover:bg-slate-50 transition-all">
-              Contact Us
+              {t("about.contactUs")}
             </Link>
           </div>
         </div>

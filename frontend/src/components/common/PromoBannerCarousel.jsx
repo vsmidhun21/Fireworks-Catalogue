@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 
@@ -13,6 +14,7 @@ const AUTOPLAY_DELAY = 5000;
  * reference fireworks storefronts.
  */
 export default function PromoBannerCarousel({ items = [] }) {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef(null);
@@ -87,7 +89,7 @@ export default function PromoBannerCarousel({ items = [] }) {
             <div className="relative z-10 h-full flex flex-col justify-center gap-2.5 px-6 sm:px-12 lg:px-16 max-w-xl">
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-gold/90 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-950">
                 <Sparkles className="h-3.5 w-3.5" />
-                Special Offer
+                {t("promoBanner.specialOffer")}
               </span>
               <h3 className="font-display text-xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight drop-shadow-lg">
                 {item.title}
@@ -112,14 +114,14 @@ export default function PromoBannerCarousel({ items = [] }) {
         <>
           <button
             onClick={goPrev}
-            aria-label="Previous banner"
+            aria-label={t("aria.previousBanner")}
             className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/15 hover:bg-white/30 backdrop-blur border border-white/20 text-white flex items-center justify-center transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={goNext}
-            aria-label="Next banner"
+            aria-label={t("aria.nextBanner")}
             className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/15 hover:bg-white/30 backdrop-blur border border-white/20 text-white flex items-center justify-center transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
@@ -130,7 +132,7 @@ export default function PromoBannerCarousel({ items = [] }) {
               <button
                 key={item.id}
                 onClick={() => goTo(i)}
-                aria-label={`Go to banner ${i + 1}`}
+                aria-label={t("aria.goToBanner", { number: i + 1 })}
                 className={`h-1.5 rounded-full transition-all ${
                   i === index ? "w-6 bg-brand-gold" : "w-1.5 bg-white/50 hover:bg-white/80"
                 }`}

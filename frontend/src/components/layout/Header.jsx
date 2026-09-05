@@ -27,7 +27,7 @@ export default function Header() {
     try {
       await downloadPriceListPDF();
     } catch (e) {
-      alert("Failed to generate Price List PDF. Please try again.");
+      alert(t("header.pdfError"));
     } finally {
       setDownloading(false);
     }
@@ -65,14 +65,14 @@ export default function Header() {
             onClick={handleDownloadPDF}
             disabled={downloading}
             className="hidden sm:flex items-center gap-1.5 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 px-3.5 py-2 font-bold text-xs transition-colors shadow-sm cursor-pointer"
-            title="Download Official 2025 Price List PDF"
+            title={t("header.downloadPriceListTitle")}
           >
             {downloading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
             ) : (
               <FileDown className="w-3.5 h-3.5 text-amber-700" />
             )}
-            <span>{downloading ? "Generating..." : "Price List"}</span>
+            <span>{downloading ? t("header.generating") : t("header.priceList")}</span>
           </button>
 
           <div className="hidden sm:block">
@@ -96,7 +96,7 @@ export default function Header() {
           <button
             className="lg:hidden p-2 text-brand-navy rounded-lg hover:bg-slate-100"
             onClick={() => setOpen((o) => !o)}
-            aria-label="Toggle menu"
+            aria-label={t("nav.toggleMenu")}
           >
             {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -129,7 +129,7 @@ export default function Header() {
               className="flex items-center justify-center gap-2 w-full py-2.5 mt-2 rounded-xl bg-amber-100 text-amber-950 font-bold text-sm border border-amber-300"
             >
               <FileDown className="w-4 h-4 text-amber-700" />
-              <span>{downloading ? "Generating Price List..." : "Download Price List (PDF)"}</span>
+              <span>{downloading ? t("header.generatingPriceListMobile") : t("header.downloadPriceListMobile")}</span>
             </button>
 
             <Link
@@ -142,7 +142,7 @@ export default function Header() {
             </Link>
 
             <div className="pt-2 border-t border-brand-border flex items-center justify-between">
-              <span className="text-xs text-brand-muted">Language / மொழி:</span>
+              <span className="text-xs text-brand-muted">{t("header.language")}:</span>
               <LanguageSwitcher />
             </div>
           </nav>

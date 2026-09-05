@@ -5,7 +5,6 @@ import { Search, ShoppingBag } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
-import { getProductImageUrl, onImageError } from "../../utils/image";
 
 const SKELETON_COUNT = 10;
 const EXPLORE_MORE_LIMIT = 8;
@@ -65,7 +64,7 @@ export default function CategoryPage() {
     return (
       <EmptyState
         icon={Search}
-        title="Category not found"
+        title={t("product.categoryNotFound")}
         action={
           <Link to="/products" className="btn-primary inline-flex items-center gap-2">
             <ShoppingBag className="w-4 h-4" />
@@ -79,21 +78,16 @@ export default function CategoryPage() {
   return (
     <div className="container-page py-8 sm:py-12">
       {category && (
-        <div className="mb-8 flex items-center gap-4">
-          {category.imageUrl && (
-            <img
-              src={getProductImageUrl(category.imageUrl)}
-              alt={category.nameEn}
-              onError={onImageError}
-              className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl border border-brand-border object-cover shadow-sm"
-            />
-          )}
-          <div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">
-              {i18n.language === "ta" && category.nameTa ? category.nameTa : category.nameEn}
-            </h1>
-            {category.descriptionEn && <p className="text-brand-muted mt-2 max-w-2xl">{category.descriptionEn}</p>}
-          </div>
+        <div className="mb-8">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">
+            {i18n.language === "ta" && category.nameTa ? category.nameTa : category.nameEn}
+          </h1>
+          {(() => {
+            const description = i18n.language === "ta" && category.descriptionTa
+              ? category.descriptionTa
+              : category.descriptionEn;
+            return description && <p className="text-brand-muted mt-2 max-w-2xl">{description}</p>;
+          })()}
         </div>
       )}
 

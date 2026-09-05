@@ -47,7 +47,7 @@ export default function Products() {
       <div className="flex items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("nav.products")}</h1>
-          <p className="text-sm text-brand-muted mt-1">Explore authentic Sivakasi fireworks at factory-direct rates</p>
+          <p className="text-sm text-brand-muted mt-1">{t("product.subtitle")}</p>
         </div>
       </div>
 

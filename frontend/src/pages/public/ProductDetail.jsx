@@ -37,7 +37,7 @@ export default function ProductDetail() {
     return (
       <EmptyState
         icon={Search}
-        title="Product not found"
+        title={t("product.productNotFound")}
         action={<Link to="/products" className="btn-primary">{t("estimate.browse")}</Link>}
       />
     );
@@ -114,11 +114,11 @@ export default function ProductDetail() {
             {!orderItem ? (
               <div className="flex items-center gap-4">
                 <div className="flex items-center border-2 border-brand-border rounded-full bg-white shadow-sm overflow-hidden">
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-brand-navy hover:bg-slate-50 rounded-l-full transition-colors" aria-label="Decrease">
+                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-brand-navy hover:bg-slate-50 rounded-l-full transition-colors" aria-label={t("aria.decrease")}>
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="w-10 text-center font-semibold text-brand-navy">{qty}</span>
-                  <button onClick={() => setQty((q) => q + 1)} className="w-10 h-10 flex items-center justify-center text-brand-navy hover:bg-slate-50 rounded-r-full transition-colors" aria-label="Increase">
+                  <button onClick={() => setQty((q) => q + 1)} className="w-10 h-10 flex items-center justify-center text-brand-navy hover:bg-slate-50 rounded-r-full transition-colors" aria-label={t("aria.increase")}>
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
@@ -134,10 +134,10 @@ export default function ProductDetail() {
               <div className="bg-brand-primary/5 border-2 border-brand-primary/30 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-bold text-brand-primary flex items-center gap-1.5">
-                    <Check className="w-4 h-4" /> In Your Order
+                    <Check className="w-4 h-4" /> {t("product.inYourOrder")}
                   </span>
                   <button onClick={() => removeItem(product.id)} className="text-rose-500 hover:text-rose-700 text-xs font-semibold flex items-center gap-1">
-                    <Trash2 className="w-3.5 h-3.5" /> Remove
+                    <Trash2 className="w-3.5 h-3.5" /> {t("product.remove")}
                   </button>
                 </div>
                 <div className="flex items-center gap-4">
@@ -200,7 +200,7 @@ export default function ProductDetail() {
           </div>
           <div className="border-t border-brand-border px-5 py-4 flex items-center justify-between">
             <div>
-              <span className="text-xs text-brand-muted">Estimated Total</span>
+              <span className="text-xs text-brand-muted">{t("product.estimatedTotal")}</span>
               <p className="font-bold text-xl text-brand-primary-dark">{formatCurrency(totals.estimatedTotal)}</p>
             </div>
             <Link to="/estimate" className="btn-primary !py-3 !px-6 flex items-center gap-2 shadow-lg shadow-brand-orange/20 hover:scale-105 transition-all">

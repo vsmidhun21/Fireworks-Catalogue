@@ -36,7 +36,7 @@ export default function CustomerDetails() {
       if (!form[field]?.trim()) next[field] = t("estimate.required");
     }
     if (form.phone && !/^[0-9+\s-]{7,15}$/.test(form.phone.trim())) {
-      next.phone = "Enter a valid phone number";
+      next.phone = t("estimate.invalidPhone");
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -80,13 +80,16 @@ export default function CustomerDetails() {
       </Link>
       <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1 mb-2">{t("estimate.customerDetails")}</h1>
       <p className="text-sm text-brand-muted mb-6">
-        Order for {totals.count} item{totals.count !== 1 ? "s" : ""} — Total {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totals.estimatedTotal)}
+        {t("estimate.orderForItems", {
+          count: totals.count,
+          amount: new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totals.estimatedTotal),
+        })}
       </p>
 
       {/* Note box */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-sm text-amber-900 flex items-start gap-2">
         <ShoppingCart className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-        <span>No advance payment needed. Our team will call or WhatsApp you to confirm everything.</span>
+        <span>{t("estimate.noAdvanceNote")}</span>
       </div>
 
       <form onSubmit={handleSubmit} className="card-surface p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-2xl border border-brand-border shadow-sm" noValidate>

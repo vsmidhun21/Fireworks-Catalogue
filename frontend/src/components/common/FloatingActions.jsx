@@ -21,7 +21,7 @@ export default function FloatingActions() {
     try {
       await downloadPriceListPDF();
     } catch (e) {
-      alert("Failed to generate PDF. Please try again.");
+      alert(t("floatingActions.pdfError"));
     } finally {
       setDownloading(false);
     }
@@ -36,42 +36,42 @@ export default function FloatingActions() {
           onClick={handleDownloadPDF}
           disabled={downloading}
           className="flex items-center gap-2 rounded-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-3.5 py-2.5 shadow-xl shadow-amber-400/25 hover:scale-105 transition-all text-xs sm:text-sm border border-amber-300 disabled:opacity-70"
-          title="Download Price List PDF"
+          title={t("floatingActions.priceListTitle")}
         >
           {downloading ? (
             <Loader2 className="w-4 h-4 animate-spin shrink-0" />
           ) : (
             <FileDown className="w-4 h-4 shrink-0" />
           )}
-          <span className="hidden xs:inline">{downloading ? "Generating..." : "Price List"}</span>
-          <span className="xs:hidden">{downloading ? "..." : "PDF"}</span>
+          <span className="hidden xs:inline">{downloading ? t("floatingActions.generating") : t("floatingActions.priceListFull")}</span>
+          <span className="xs:hidden">{downloading ? t("floatingActions.generatingShort") : t("floatingActions.priceListShort")}</span>
         </button>
 
         {/* Call Us */}
         <a
           href={`tel:${phone}`}
           className="flex items-center gap-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-2.5 shadow-xl shadow-blue-600/30 hover:scale-105 transition-all text-xs sm:text-sm"
-          aria-label="Call us"
-          title={`Call ${phone}`}
+          aria-label={t("aria.callUs")}
+          title={t("floatingActions.callUsTitle", { phone })}
         >
           <span className="relative flex">
             <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-30" />
             <Phone className="w-4 h-4 shrink-0 fill-current" />
           </span>
-          <span>Call Us</span>
+          <span>{t("floatingActions.callUs")}</span>
         </a>
 
         {/* WhatsApp */}
         <a
-          href={whatsappLink(whatsappNum, "Hi Sri RR Crackers, I want to enquire about cracker prices.")}
+          href={whatsappLink(whatsappNum, t("floatingActions.whatsappMessage"))}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold px-3.5 py-2.5 shadow-xl shadow-green-600/25 hover:scale-105 transition-all text-xs sm:text-sm"
-          aria-label="Chat on WhatsApp"
-          title="Chat on WhatsApp"
+          aria-label={t("aria.chatWhatsapp")}
+          title={t("floatingActions.whatsappTitle")}
         >
           <MessageCircle className="w-4 h-4 fill-current shrink-0" />
-          <span>WhatsApp</span>
+          <span>{t("floatingActions.whatsapp")}</span>
         </a>
       </div>
 

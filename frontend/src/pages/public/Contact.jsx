@@ -34,7 +34,7 @@ export default function Contact() {
             <h3 className="font-display font-semibold text-brand-navy">{t("contact.whatsapp")}</h3>
           </div>
           <a href={whatsappLink(settings.whatsapp_number)} target="_blank" rel="noopener noreferrer" className="text-brand-primary font-semibold hover:underline text-sm inline-block">
-            Chat on WhatsApp
+            {t("contact.chatWhatsapp")}
           </a>
         </div>
 
@@ -52,7 +52,7 @@ export default function Contact() {
           <iframe title="map" src={settings.google_maps_url} className="w-full h-full" loading="lazy" />
         </div>
       ) : (
-        <p className="text-xs text-brand-muted text-center mt-8">Google Maps location to be added by admin in Settings.</p>
+        <p className="text-xs text-brand-muted text-center mt-8">{t("contact.mapsPlaceholder")}</p>
       )}
     </div>
   );

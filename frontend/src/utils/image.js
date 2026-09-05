@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../services/api";
+
 export const DEFAULT_PRODUCT_IMAGE = "/images/default_product.png";
 
 /**
@@ -6,6 +8,9 @@ export const DEFAULT_PRODUCT_IMAGE = "/images/default_product.png";
 export function getProductImageUrl(url) {
   if (!url || typeof url !== "string" || !url.trim()) {
     return DEFAULT_PRODUCT_IMAGE;
+  }
+  if (url.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${url}`;
   }
   return url;
 }

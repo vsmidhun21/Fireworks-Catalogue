@@ -23,10 +23,10 @@ export default function Footer() {
             <li><Link to="/products" className="hover:text-brand-gold">{t("nav.products")}</Link></li>
             <li><Link to="/gift-boxes" className="hover:text-brand-gold">{t("nav.giftBoxes")}</Link></li>
             <li><Link to="/about" className="hover:text-brand-gold">{t("nav.about")}</Link></li>
-            <li><Link to="/payment" className="hover:text-brand-gold">Payment Information</Link></li>
+            <li><Link to="/payment" className="hover:text-brand-gold">{t("footer.paymentInfo")}</Link></li>
             <li><Link to="/safety" className="hover:text-brand-gold">{t("nav.safety")}</Link></li>
-            <li><Link to="/privacy-policy" className="hover:text-brand-gold">Privacy Policy</Link></li>
-            <li><Link to="/terms-and-conditions" className="hover:text-brand-gold">Terms &amp; Conditions</Link></li>
+            <li><Link to="/privacy-policy" className="hover:text-brand-gold">{t("footer.privacyPolicy")}</Link></li>
+            <li><Link to="/terms-and-conditions" className="hover:text-brand-gold">{t("footer.terms")}</Link></li>
           </ul>
         </div>
 
@@ -37,7 +37,7 @@ export default function Footer() {
             <li>{settings.phone_primary}{settings.phone_secondary ? `, ${settings.phone_secondary}` : ""}</li>
             <li>
               <a href={whatsappLink(settings.whatsapp_number)} target="_blank" rel="noopener noreferrer" className="hover:text-brand-gold">
-                WhatsApp: {settings.phone_primary}
+                {t("footer.whatsappPrefix")}: {settings.phone_primary}
               </a>
             </li>
             {settings.email && <li>{settings.email}</li>}
@@ -57,7 +57,7 @@ export default function Footer() {
           </span>
 
           <div className="text-white/40">
-            Made by{" "}
+            {t("footer.madeBy")}{" "}
             <a
               href="https://midhun-v-s.web.app"
               target="_blank"

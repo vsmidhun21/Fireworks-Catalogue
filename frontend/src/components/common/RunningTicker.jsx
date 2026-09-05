@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Flame, FileDown } from "lucide-react";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 
 export default function RunningTicker() {
+  const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async (e) => {
@@ -11,7 +13,7 @@ export default function RunningTicker() {
     try {
       await downloadPriceListPDF();
     } catch (err) {
-      alert("Could not generate PDF right now. Please try again.");
+      alert(t("ticker.pdfError"));
     } finally {
       setDownloading(false);
     }
@@ -19,29 +21,29 @@ export default function RunningTicker() {
 
   const tickerItems = [
     {
-      badge: "MEGA DIWALI SALE",
+      badge: t("ticker.item1Badge"),
       badgeClass: "bg-amber-400 text-slate-950 font-extrabold",
-      text: "Special Diwali Festive Discounts Live! Up to 90% Off Retail Prices!",
+      text: t("ticker.item1Text"),
     },
     {
-      badge: "SIVAKASI DIRECT",
+      badge: t("ticker.item2Badge"),
       badgeClass: "bg-rose-500 text-white font-bold",
-      text: "100% Genuine Certified Green Crackers Directly from Sivakasi Factory",
+      text: t("ticker.item2Text"),
     },
     {
-      badge: "PAN-INDIA DISPATCH",
+      badge: t("ticker.item3Badge"),
       badgeClass: "bg-emerald-400 text-slate-950 font-bold",
-      text: "Fast & Safe Transport Across India · Minimum Order ₹3,000",
+      text: t("ticker.item3Text"),
     },
     {
-      badge: "QUICK ESTIMATE",
+      badge: t("ticker.item4Badge"),
       badgeClass: "bg-cyan-400 text-slate-950 font-bold",
-      text: "Select Crackers & Get Instant Quotation in 1-Click with Zero Payment Advance!",
+      text: t("ticker.item4Text"),
     },
     {
-      badge: "CALL / WHATSAPP",
+      badge: t("ticker.item5Badge"),
       badgeClass: "bg-brand-gold text-slate-950 font-bold",
-      text: "Helpline: +91 87540 66248 | +91 88257 21391",
+      text: t("ticker.item5Text"),
     },
   ];
 
@@ -51,7 +53,7 @@ export default function RunningTicker() {
         {/* Left Fixed Pill on desktop */}
         <div className="hidden md:flex items-center gap-1.5 px-3 py-0.5 bg-amber-500 text-slate-950 font-black text-[11px] uppercase tracking-wider rounded-r-full shrink-0 z-10 shadow-md shadow-amber-500/20">
           <Flame className="w-3.5 h-3.5 fill-slate-950 animate-bounce" />
-          <span>FESTIVAL OFFERS</span>
+          <span>{t("ticker.festivalOffers")}</span>
         </div>
 
         {/* Continuous Marquee Track */}
@@ -77,10 +79,10 @@ export default function RunningTicker() {
           onClick={handleDownload}
           disabled={downloading}
           className="hidden sm:flex items-center gap-1.5 px-3 py-0.5 bg-white/10 hover:bg-amber-500 hover:text-slate-950 border border-amber-400/30 text-amber-300 rounded-l-full text-[11px] font-bold shrink-0 z-10 transition-all cursor-pointer"
-          title="Download 2025 Price List PDF"
+          title={t("ticker.downloadTitle")}
         >
           <FileDown className="w-3 h-3" />
-          <span>{downloading ? "Generating..." : "PDF Price List"}</span>
+          <span>{downloading ? t("header.generating") : t("ticker.downloadCta")}</span>
         </button>
       </div>
     </div>

@@ -5,14 +5,14 @@ import { useTranslation } from "react-i18next";
 import { useSettings } from "../../context/SettingsContext";
 
 const ITEMS = [
-  { icon: ShieldCheck, color: "text-emerald-400 bg-emerald-400/10", title: "Licensed Retailer", desc: "Fully licensed fireworks retailer based in Sivakasi." },
-  { icon: Truck, color: "text-cyan-400 bg-cyan-400/10", title: "Pan-India Delivery", desc: "We deliver safely across India, subject to local regulations." },
-  { icon: Sparkles, color: "text-amber-400 bg-amber-400/10", title: "Quality Assured", desc: "Carefully sourced crackers for a safe, joyful celebration." },
-  { icon: BadgeCheck, color: "text-rose-400 bg-rose-400/10", title: "No Advance Needed", desc: "Pay only after delivery. No online payment, no risk." },
-  { icon: Wallet, color: "text-lime-400 bg-lime-400/10", title: "Attractive Value", desc: "Direct-from-Sivakasi pricing with genuine discounts." },
-  { icon: ListChecks, color: "text-violet-400 bg-violet-400/10", title: "Wide Collection", desc: "From sparklers to premium gift boxes — something for everyone." },
-  { icon: Headset, color: "text-sky-400 bg-sky-400/10", title: "Personal Support", desc: "Our team confirms every order over a call or WhatsApp." },
-  { icon: PartyPopper, color: "text-pink-400 bg-pink-400/10", title: "Festive Experience", desc: "Curated collections built for real celebrations." },
+  { icon: ShieldCheck, color: "text-emerald-400 bg-emerald-400/10", key: 1 },
+  { icon: Truck, color: "text-cyan-400 bg-cyan-400/10", key: 2 },
+  { icon: Sparkles, color: "text-amber-400 bg-amber-400/10", key: 3 },
+  { icon: BadgeCheck, color: "text-rose-400 bg-rose-400/10", key: 4 },
+  { icon: Wallet, color: "text-lime-400 bg-lime-400/10", key: 5 },
+  { icon: ListChecks, color: "text-violet-400 bg-violet-400/10", key: 6 },
+  { icon: Headset, color: "text-sky-400 bg-sky-400/10", key: 7 },
+  { icon: PartyPopper, color: "text-pink-400 bg-pink-400/10", key: 8 },
 ];
 
 export default function WhyChooseUs() {
@@ -30,20 +30,20 @@ export default function WhyChooseUs() {
         <div className="text-center max-w-xl mx-auto mb-10">
           <span className="text-xs font-bold uppercase tracking-wider text-brand-gold">Why {businessName}</span>
           <h2 className="font-display text-2xl sm:text-3xl font-bold mt-1">{t("home.whyChooseUs")}</h2>
-          <p className="font-tamil text-sm text-white/60 mt-1">எங்களிடம் ஏன் வாங்க வேண்டும்?</p>
+          <p className="text-sm text-white/60 mt-1">{t("whyChooseUs.subtitle")}</p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-6">
-          {ITEMS.map(({ icon: Icon, color, title, desc }) => (
+          {ITEMS.map(({ icon: Icon, color, key }) => (
             <div
-              key={title}
+              key={key}
               className="text-center px-2 py-3 space-y-3 rounded-2xl hover:bg-white/5 transition-colors"
             >
               <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${color} flex items-center justify-center mx-auto border border-white/10 group-hover:scale-105 transition-transform`}>
                 <Icon className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
-              <h3 className="font-display font-bold text-sm sm:text-base text-white">{title}</h3>
-              <p className="text-xs sm:text-sm text-white/70 leading-relaxed">{desc}</p>
+              <h3 className="font-display font-bold text-sm sm:text-base text-white">{t(`whyChooseUs.item${key}Title`)}</h3>
+              <p className="text-xs sm:text-sm text-white/70 leading-relaxed">{t(`whyChooseUs.item${key}Desc`)}</p>
             </div>
           ))}
         </div>
