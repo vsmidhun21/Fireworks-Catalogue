@@ -152,8 +152,8 @@ const fullCatalogue = [
     ],
   },
   {
-    category: "NEW ARRIVALS 2025",
-    categoryTa: "புதிய வரவுகள் 2025",
+    category: "NEW ARRIVALS",
+    categoryTa: "புதிய வரவுகள்",
     items: [
       { code: "072", nameEn: "Smoke", nameTa: "ஸ்மோக்", unit: "Box", price: 1600, discounted: 1600 },
       { code: "073", nameEn: "Gittar", nameTa: "கிட்டார்", unit: "Box", price: 2500, discounted: 2500, featured: true },
@@ -243,7 +243,7 @@ async function main() {
     });
   }
 
-  console.log("Seeding official catalogue categories & products from Price List 2025...");
+  console.log("Seeding official catalogue categories & products from Price List...");
   let sortOrder = 0;
   for (const catGroup of fullCatalogue) {
     sortOrder += 1;

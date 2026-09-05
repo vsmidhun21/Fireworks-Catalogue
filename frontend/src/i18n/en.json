@@ -64,7 +64,7 @@
     "trustGenuine": "100% Genuine Sivakasi",
     "trustFactoryPrices": "Direct Factory Prices",
     "trustPanIndia": "Pan-India Delivery",
-    "festivalBadge": "DIWALI FESTIVAL SPECIAL 2025",
+    "festivalBadge": "DIWALI FESTIVAL SPECIAL",
     "discountBadge": "UP TO 90% DISCOUNT",
     "seoTitle": "Premium Fireworks for Memorable Celebrations"
   },
@@ -220,7 +220,7 @@
   "header": {
     "priceList": "Price List",
     "generating": "Generating...",
-    "downloadPriceListTitle": "Download Official 2025 Price List PDF",
+    "downloadPriceListTitle": "Download Official Price List PDF",
     "downloadPriceListMobile": "Download Price List (PDF)",
     "generatingPriceListMobile": "Generating Price List...",
     "pdfError": "Failed to generate Price List PDF. Please try again.",
@@ -228,7 +228,7 @@
   },
   "ticker": {
     "festivalOffers": "FESTIVAL OFFERS",
-    "downloadTitle": "Download 2025 Price List PDF",
+    "downloadTitle": "Download Price List PDF",
     "downloadCta": "PDF Price List",
     "pdfError": "Could not generate PDF right now. Please try again.",
     "item1Badge": "MEGA DIWALI SALE",
