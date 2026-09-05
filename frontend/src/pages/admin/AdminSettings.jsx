@@ -234,7 +234,7 @@ export default function AdminSettings() {
             <Palette className="w-5 h-5 text-brand-primary shrink-0" />
             <h2 className="font-display text-lg font-bold text-brand-navy">Branding</h2>
           </div>
-          <p className="text-sm text-brand-muted">Your logo and brand colors, used site-wide.</p>
+          {/* <p className="text-sm text-brand-muted">Your logo and brand colors, used site-wide.</p> */}
         </div>
 
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
@@ -577,7 +577,7 @@ export default function AdminSettings() {
             <PhoneCall className="w-5 h-5 text-brand-primary shrink-0" />
             <h2 className="font-display text-lg font-bold text-brand-navy">Business & Contact Details</h2>
           </div>
-          <p className="text-sm text-brand-muted">Shown across the header, footer, contact page and PDF price list.</p>
+          {/* <p className="text-sm text-brand-muted">Shown across the header, footer, contact page and PDF price list.</p> */}
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
