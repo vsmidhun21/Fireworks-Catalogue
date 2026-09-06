@@ -97,6 +97,27 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+  -- Keep the earliest customer row when upgrading databases that predate the
+  -- unique phone constraint, and preserve its estimate relationships.
+  UPDATE estimates
+  SET customer_id = (
+    SELECT MIN(c2.id)
+    FROM customers c2
+    WHERE c2.phone = (SELECT c1.phone FROM customers c1 WHERE c1.id = estimates.customer_id)
+  )
+  WHERE customer_id IN (
+    SELECT c.id
+    FROM customers c
+    JOIN customers keeper ON keeper.phone = c.phone AND keeper.id < c.id
+  );
+  DELETE FROM customers
+  WHERE id IN (
+    SELECT c.id
+    FROM customers c
+    JOIN customers keeper ON keeper.phone = c.phone AND keeper.id < c.id
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
   CREATE INDEX IF NOT EXISTS idx_estimates_status ON estimates(status);
 
   CREATE TABLE IF NOT EXISTS estimate_items (

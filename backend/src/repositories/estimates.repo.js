@@ -53,9 +53,22 @@ function rowToItem(r) {
 
 export const CustomerRepo = {
   create(c) {
+    const phone = String(c.phone).trim();
+    const existing = db.prepare("SELECT id FROM customers WHERE phone = ?").get(phone);
+    if (existing) {
+      db
+        .prepare(
+          `UPDATE customers
+           SET name=?, email=?, address=?, city=?, state=?, pincode=?, updated_at=?
+           WHERE id=?`
+        )
+        .run(c.name, c.email || null, c.address, c.city, c.state, c.pincode, nowIso(), existing.id);
+      return rowToCustomer(db.prepare("SELECT * FROM customers WHERE id = ?").get(existing.id));
+    }
+
     const info = db
       .prepare(`INSERT INTO customers (name, phone, email, address, city, state, pincode, updated_at) VALUES (?,?,?,?,?,?,?,?)`)
-      .run(c.name, c.phone, c.email || null, c.address, c.city, c.state, c.pincode, nowIso());
+      .run(c.name, phone, c.email || null, c.address, c.city, c.state, c.pincode, nowIso());
     return rowToCustomer(db.prepare("SELECT * FROM customers WHERE id = ?").get(Number(info.lastInsertRowid)));
   },
   findById(id) {

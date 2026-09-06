@@ -5,15 +5,13 @@ import {
   Sparkles, ArrowRight, Truck, CheckCircle2, PhoneCall, ShieldCheck,
   ShoppingBag, Award, FileDown, Percent, Loader2, MessageCircle,
 } from "lucide-react";
-import { CategoryService, ProductService, PromotionService } from "../../services/api";
+import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid } from "../../components/common/States";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
-import PromoBannerCarousel from "../../components/common/PromoBannerCarousel";
 import CategoryShowcase from "../../components/common/CategoryShowcase";
 import BrandStory from "../../components/common/BrandStory";
 import WhyChooseUs from "../../components/common/WhyChooseUs";
-import GiftBoxShowcase from "../../components/common/GiftBoxShowcase";
 import SEO from "../../components/common/SEO";
 import { useSettings } from "../../context/SettingsContext";
 import { whatsappLink } from "../../utils/format";
@@ -142,7 +140,6 @@ export default function Home() {
   const businessName = settings.business_name || "Sri RR Crackers";
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
-  const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
@@ -161,11 +158,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    Promise.all([CategoryService.list(), ProductService.featured(), PromotionService.list({ limit: 10 })])
-      .then(([catRes, featRes, promotionRes]) => {
+    Promise.all([CategoryService.list(), ProductService.featured()])
+      .then(([catRes, featRes]) => {
         setCategories(catRes.data || []);
         setFeatured(featRes.data || []);
-        setPromotions(promotionRes.data?.items || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -312,9 +308,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── PROMO BANNERS ── */}
-      {promotions.length > 0 && <PromoBannerCarousel items={promotions.slice(0, 8)} />}
-
       {/* ── FEATURED PRODUCTS ── */}
       <section className="bg-gradient-to-b from-slate-50 to-white py-14 sm:py-16 border-y border-brand-border">
         <div className="container-page">
@@ -357,9 +350,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── GIFT BOX SHOWCASE ── */}
-      <GiftBoxShowcase />
-
       {/* ── CATEGORIES ── */}
       <section className="container-page py-14 sm:py-16">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
@@ -380,6 +370,36 @@ export default function Home() {
         ) : (
           <CategoryShowcase categories={categories} />
         )}
+      </section>
+
+      {/* ── WHATSAPP / CONTACT CTA STRIP ── */}
+      <section className="bg-gradient-to-r from-[#25D366] via-[#20bd5a] to-[#128C7E] text-white py-10 px-4">
+        <div className="container-page flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="text-center sm:text-left">
+            <h3 className="font-display text-xl sm:text-2xl font-extrabold mb-1">{t("home.whatsappCta")}</h3>
+            <p className="text-sm text-white/80">{t("home.whatsappCtaSub")}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            <a
+              href={whatsappLink(whatsappNum, "Hi Sri RR Crackers! I want to enquire about crackers.")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-white text-[#128C7E] font-bold rounded-full px-6 py-3 shadow-lg hover:scale-105 transition-all text-sm sm:text-base"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span>{t("home.whatsappUs")}</span>
+            </a>
+            {phone && (
+              <a
+                href={`tel:${phone}`}
+                className="flex items-center justify-center gap-2 bg-white/20 border border-white/50 text-white font-bold rounded-full px-6 py-3 hover:bg-white/30 transition-all text-sm sm:text-base"
+              >
+                <PhoneCall className="w-5 h-5" />
+                <span>{t("home.callUs")}</span>
+              </a>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* ── HOW TO ORDER ── */}
@@ -427,41 +447,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── WHATSAPP / CONTACT CTA STRIP ── */}
-      <section className="bg-gradient-to-r from-[#25D366] via-[#20bd5a] to-[#128C7E] text-white py-10 px-4">
-        <div className="container-page flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="text-center sm:text-left">
-            <h3 className="font-display text-xl sm:text-2xl font-extrabold mb-1">{t("home.whatsappCta")}</h3>
-            <p className="text-sm text-white/80">{t("home.whatsappCtaSub")}</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-            <a
-              href={whatsappLink(whatsappNum, "Hi Sri RR Crackers! I want to enquire about crackers.")}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-white text-[#128C7E] font-bold rounded-full px-6 py-3 shadow-lg hover:scale-105 transition-all text-sm sm:text-base"
-            >
-              <MessageCircle className="w-5 h-5" />
-              <span>{t("home.whatsappUs")}</span>
-            </a>
-            {phone && (
-              <a
-                href={`tel:${phone}`}
-                className="flex items-center justify-center gap-2 bg-white/20 border border-white/50 text-white font-bold rounded-full px-6 py-3 hover:bg-white/30 transition-all text-sm sm:text-base"
-              >
-                <PhoneCall className="w-5 h-5" />
-                <span>{t("home.callUs")}</span>
-              </a>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* ── WHY CHOOSE US ── */}
+      <WhyChooseUs />
 
       {/* ── BRAND STORY ── */}
       <BrandStory />
-
-      {/* ── WHY CHOOSE US ── */}
-      <WhyChooseUs />
     </div>
   );
 }

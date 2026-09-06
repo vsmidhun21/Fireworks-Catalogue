@@ -5,8 +5,6 @@ import Home from "./pages/public/Home";
 import Products from "./pages/public/Products";
 import ProductDetail from "./pages/public/ProductDetail";
 import CategoryPage from "./pages/public/CategoryPage";
-import GiftBoxes from "./pages/public/GiftBoxes";
-import GiftBoxDetail from "./pages/public/GiftBoxDetail";
 import Payment from "./pages/public/Payment";
 import Estimate from "./pages/public/Estimate";
 import CustomerDetails from "./pages/public/CustomerDetails";
@@ -28,8 +26,6 @@ import AdminEstimates from "./pages/admin/AdminEstimates";
 import AdminEstimateDetail from "./pages/admin/AdminEstimateDetail";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail";
-import AdminPromotions from "./pages/admin/AdminPromotions";
-import AdminGiftBoxes from "./pages/admin/AdminGiftBoxes";
 import AdminSettings from "./pages/admin/AdminSettings";
 
 export default function App() {
@@ -41,8 +37,6 @@ export default function App() {
         <Route path="/products" element={<Products />} />
         <Route path="/products/:slug" element={<ProductDetail />} />
         <Route path="/categories/:slug" element={<CategoryPage />} />
-        <Route path="/gift-boxes" element={<GiftBoxes />} />
-        <Route path="/gift-boxes/:slug" element={<GiftBoxDetail />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/estimate" element={<Estimate />} />
         <Route path="/estimate/customer-details" element={<CustomerDetails />} />
@@ -73,8 +67,6 @@ export default function App() {
         <Route path="estimates/:id" element={<AdminEstimateDetail />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
-        <Route path="promotions" element={<AdminPromotions />} />
-        <Route path="gift-boxes" element={<AdminGiftBoxes />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
     </Routes>
