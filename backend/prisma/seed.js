@@ -245,6 +245,7 @@ async function main() {
 
   console.log("Seeding official catalogue categories & products from Price List...");
   let sortOrder = 0;
+  let productNumber = 0;
   for (const catGroup of fullCatalogue) {
     sortOrder += 1;
     const slug = slugify(catGroup.category);
@@ -268,7 +269,8 @@ async function main() {
     let pSort = 0;
     for (const p of catGroup.items) {
       pSort += 1;
-      const existingProduct = ProductRepo.findByCode(p.code);
+      const productCode = String(++productNumber).padStart(3, "0");
+      const existingProduct = ProductRepo.findByCode(productCode);
       if (existingProduct) {
         ProductRepo.update(existingProduct.id, {
           categoryId: category.id,
@@ -283,10 +285,10 @@ async function main() {
       } else {
         ProductRepo.create({
           categoryId: category.id,
-          productCode: p.code,
+          productCode,
           nameEn: p.nameEn,
           nameTa: p.nameTa,
-          slug: slugify(p.nameEn) + "-" + p.code.toLowerCase(),
+          slug: slugify(p.nameEn) + "-" + productCode,
           descriptionEn: `${p.nameEn} — 100% genuine Sivakasi fireworks, premium sound & visual effects.`,
           unit: p.unit,
           originalPrice: p.price,

@@ -6,20 +6,32 @@ import { DEFAULT_THEME } from "./theme";
 // Real, embedded Unicode Tamil font (not the OS's fonts, not a canvas/image
 // rasterization) so Tamil category/product names render as genuine,
 // selectable text in the generated PDF instead of Latin-only jsPDF glyphs.
-const TAMIL_FONT_NAME = "NotoSansTamil";
-let tamilFontRegistered = false;
+const TAMIL_FONT_NAME = "NotoSerifTamil";
+const tamilFontsRegisteredFor = new WeakSet();
+const TAMIL_MM_TO_PX = 96 / 25.4;
+const TAMIL_IMAGE_SCALE = 4;
+let tamilRegularFontData = "";
+let tamilCanvasFontReady = false;
 
 async function ensureTamilFontEmbedded(doc) {
-  if (!tamilFontRegistered) {
-    const [{ NotoSansTamilRegular }, { NotoSansTamilBold }] = await Promise.all([
-      import("../assets/fonts/NotoSansTamil-Regular.js"),
-      import("../assets/fonts/NotoSansTamil-Bold.js"),
+  if (!tamilFontsRegisteredFor.has(doc)) {
+    const [{ NotoSerifTamilRegular }, { NotoSerifTamilBold }] = await Promise.all([
+      import("../assets/fonts/NotoSerifTamil-Regular.js"),
+      import("../assets/fonts/NotoSerifTamil-Bold.js"),
     ]);
-    doc.addFileToVFS("NotoSansTamil-Regular.ttf", NotoSansTamilRegular);
-    doc.addFont("NotoSansTamil-Regular.ttf", TAMIL_FONT_NAME, "normal");
-    doc.addFileToVFS("NotoSansTamil-Bold.ttf", NotoSansTamilBold);
-    doc.addFont("NotoSansTamil-Bold.ttf", TAMIL_FONT_NAME, "bold");
-    tamilFontRegistered = true;
+    tamilRegularFontData = NotoSerifTamilRegular;
+    doc.addFileToVFS("NotoSerifTamil-Regular.ttf", NotoSerifTamilRegular);
+    doc.addFont("NotoSerifTamil-Regular.ttf", TAMIL_FONT_NAME, "normal");
+    doc.addFileToVFS("NotoSerifTamil-Bold.ttf", NotoSerifTamilBold);
+    doc.addFont("NotoSerifTamil-Bold.ttf", TAMIL_FONT_NAME, "bold");
+    tamilFontsRegisteredFor.add(doc);
+  }
+
+  if (!tamilCanvasFontReady && typeof FontFace !== "undefined" && typeof document !== "undefined") {
+    const fontFace = new FontFace(TAMIL_FONT_NAME, `url(data:font/ttf;base64,${tamilRegularFontData})`);
+    await fontFace.load();
+    document.fonts.add(fontFace);
+    tamilCanvasFontReady = true;
   }
 }
 
@@ -46,6 +58,47 @@ function hexToRgb(hex, fallback = [15, 23, 42]) {
 /** Blends a color toward white by `amount` (0-1), used for soft tinted bands. */
 function tint(rgb, amount) {
   return rgb.map((c) => Math.round(c + (255 - c) * amount));
+}
+
+function getTamilCanvasContext(fontSize) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.font = `${fontSize * (96 / 72)}px "${TAMIL_FONT_NAME}"`;
+  return context;
+}
+
+function getTamilTextWidth(text, fontSize) {
+  return getTamilCanvasContext(fontSize).measureText(text).width / TAMIL_MM_TO_PX;
+}
+
+function drawTamilImage(doc, text, x, centerY, fontSize, color) {
+  if (!text) return;
+
+  const fontPx = fontSize * (96 / 72);
+  const context = getTamilCanvasContext(fontSize);
+  const paddingPx = 4;
+  const widthPx = Math.ceil(context.measureText(text).width + paddingPx * 2);
+  const heightPx = Math.ceil(fontPx * 1.45 + paddingPx * 2);
+  const canvas = document.createElement("canvas");
+  canvas.width = widthPx * TAMIL_IMAGE_SCALE;
+  canvas.height = heightPx * TAMIL_IMAGE_SCALE;
+  const imageContext = canvas.getContext("2d");
+  imageContext.scale(TAMIL_IMAGE_SCALE, TAMIL_IMAGE_SCALE);
+  imageContext.font = context.font;
+  imageContext.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+  imageContext.textBaseline = "middle";
+  imageContext.fillText(text, paddingPx, heightPx / 2);
+
+  doc.addImage(
+    canvas.toDataURL("image/png"),
+    "PNG",
+    x,
+    centerY - heightPx / TAMIL_MM_TO_PX / 2,
+    widthPx / TAMIL_MM_TO_PX,
+    heightPx / TAMIL_MM_TO_PX,
+    undefined,
+    "FAST"
+  );
 }
 
 /**
@@ -80,8 +133,7 @@ function drawCategoryBand(doc, data) {
 
   let tamilWidth = 0;
   if (nameTa) {
-    doc.setFont(TAMIL_FONT_NAME, "normal");
-    tamilWidth = doc.getTextWidth(nameTa);
+    tamilWidth = getTamilTextWidth(nameTa, Math.max(fontSize, 8.2));
   }
 
   const totalWidth = engWidth + sepWidth + tamilWidth;
@@ -100,8 +152,7 @@ function drawCategoryBand(doc, data) {
   }
 
   if (nameTa) {
-    doc.setFont(TAMIL_FONT_NAME, "normal");
-    doc.text(nameTa, x, centerY, { baseline: "middle" });
+    drawTamilImage(doc, nameTa, x, centerY, Math.max(fontSize, 8.2), textColor || [30, 41, 59]);
   }
 
   doc.setFont("helvetica", "normal");
@@ -116,10 +167,7 @@ function drawProductTamilName(doc, data) {
   const fontSize = cell.styles.fontSize || 7.4;
   const textColor = cell.styles.textColor || [30, 41, 59];
 
-  doc.setFont(TAMIL_FONT_NAME, "normal");
-  doc.setFontSize(Math.max(fontSize, 8.2));
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.text(tamilText, cell.x + 1.5, cell.y + cell.height / 2, { baseline: "middle" });
+  drawTamilImage(doc, tamilText, cell.x + 1.5, cell.y + cell.height / 2, Math.max(fontSize, 8.2), textColor);
   doc.setFont("helvetica", "normal");
 }
 
@@ -134,7 +182,7 @@ function formatPrice(value) {
 // autoTable configuration below. Keeping a single source of truth here is
 // what lets buildTableRows() simulate pagination accurately enough to avoid
 // orphaned category headings, without duplicating magic numbers. ----
-const COLUMN_WIDTHS = [15, 48, 43, 19, 18, 25, 14]; // mm, matches columnStyles
+const COLUMN_WIDTHS = [15, 55, 50, 19, 18, 25]; // mm, matches columnStyles
 const PRODUCT_NAME_COLUMN = 1;
 const BODY_FONT_SIZE = 7.4;
 const BODY_CELL_PADDING = 1.6;
@@ -171,7 +219,7 @@ function estimateBandRowHeight() {
   return estimateTextBlockHeight(1, BAND_FONT_SIZE, BAND_CELL_PADDING);
 }
 
-const TABLE_HEAD_LABELS = ["Code", "Product Name", "Tamil Name", "MRP (Rs.)", "Unit", "Offer Price (Rs.)", "Qty"];
+const TABLE_HEAD_LABELS = ["Code", "Product Name", "Tamil Name", "MRP (Rs.)", "Unit", "Offer Price (Rs.)"];
 const HEAD_FONT_SIZE = 8.5;
 const HEAD_CELL_PADDING = 2.2;
 
@@ -237,7 +285,7 @@ function buildTableRows(doc, groups, accentRgb, layout) {
       rows.push([
         {
           content: "",
-          colSpan: 7,
+          colSpan: 6,
           styles: {
             minCellHeight: spacerHeight,
             fillColor: false,
@@ -254,7 +302,7 @@ function buildTableRows(doc, groups, accentRgb, layout) {
         // same way it always has; the full bilingual line (English + Tamil)
         // is then drawn over it in didDrawCell via drawCategoryBand().
         content: group.category.nameEn.toUpperCase(),
-        colSpan: 7,
+        colSpan: 6,
         categoryBand: {
           nameEn: group.category.nameEn.toUpperCase(),
           nameTa: group.category.nameTa || "",
@@ -284,7 +332,6 @@ function buildTableRows(doc, groups, accentRgb, layout) {
           content: formatPrice(discPrice),
           styles: hasDiscount ? { textColor: [21, 128, 61] } : {},
         },
-        "",
       ]);
       simulateAdvance(estimateProductRowHeight(doc, product));
     });
@@ -479,7 +526,6 @@ export async function downloadPriceListPDF(options = {}) {
           { content: TABLE_HEAD_LABELS[3], styles: { halign: "right" } },
           { content: TABLE_HEAD_LABELS[4], styles: { halign: "center" } },
           { content: TABLE_HEAD_LABELS[5], styles: { halign: "right" } },
-          { content: TABLE_HEAD_LABELS[6], styles: { halign: "center" } },
         ],
       ],
       body: tableBody,
@@ -505,12 +551,11 @@ export async function downloadPriceListPDF(options = {}) {
       },
       columnStyles: {
         0: { cellWidth: 15, halign: "center", fontStyle: "bold", textColor: primaryRgb },
-        1: { cellWidth: 48, halign: "left" },
-        2: { cellWidth: 43, halign: "left", minCellHeight: 8 },
+        1: { cellWidth: 55, halign: "left" },
+        2: { cellWidth: 50, halign: "left", minCellHeight: 8 },
         3: { cellWidth: 19, halign: "right" },
         4: { cellWidth: 18, halign: "center" },
         5: { cellWidth: 25, halign: "right", fontStyle: "bold" },
-        6: { cellWidth: 14, halign: "center" },
       },
       alternateRowStyles: {
         fillColor: [249, 250, 251],

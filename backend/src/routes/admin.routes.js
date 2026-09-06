@@ -236,7 +236,7 @@ router.put("/products/:id", uploadProductImage.single("image"), (req, res, next)
     const b = req.body;
     const fields = {};
     if (b.categoryId != null) fields.categoryId = Number(b.categoryId);
-    if (b.productCode != null && b.productCode !== "") fields.productCode = Number(b.productCode);
+    if (b.productCode != null && b.productCode !== "") fields.productCode = String(b.productCode);
     if (b.nameEn != null) fields.nameEn = b.nameEn;
     if (b.nameTa !== undefined) fields.nameTa = parseNullableText(b.nameTa);
     if (b.descriptionEn !== undefined) fields.descriptionEn = parseNullableText(b.descriptionEn);

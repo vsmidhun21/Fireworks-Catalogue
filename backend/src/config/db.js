@@ -171,6 +171,39 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_gift_boxes_active_sort ON gift_boxes(is_active, sort_order);
 `);
 
+function normalizeProductCodes() {
+  const products = db.prepare("SELECT id, product_code FROM products ORDER BY id").all();
+  if (!products.length) return;
+  if (products.length > 999) throw new Error("Product codes support a maximum of 999 products");
+
+  const updates = products.map((product, index) => ({
+    id: product.id,
+    oldCode: product.product_code,
+    newCode: String(index + 1).padStart(3, "0"),
+  }));
+  if (updates.every(({ oldCode, newCode }) => oldCode === newCode)) return;
+
+  db.exec("BEGIN");
+  try {
+    const setTemporaryCode = db.prepare("UPDATE products SET product_code = ? WHERE id = ?");
+    const setProductCode = db.prepare("UPDATE products SET product_code = ?, updated_at = ? WHERE id = ?");
+    const setEstimateCode = db.prepare("UPDATE estimate_items SET product_code = ? WHERE product_id = ?");
+    const updatedAt = new Date().toISOString();
+
+    for (const product of updates) setTemporaryCode.run(`__PRODUCT_CODE_${product.id}__`, product.id);
+    for (const product of updates) {
+      setProductCode.run(product.newCode, updatedAt, product.id);
+      setEstimateCode.run(product.newCode, product.id);
+    }
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+normalizeProductCodes();
+
 export function nowIso() {
   return new Date().toISOString();
 }

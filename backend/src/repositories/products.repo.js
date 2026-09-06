@@ -30,6 +30,16 @@ function withCategory(product) {
   return { ...product, category: CategoryRepo.findById(product.categoryId) };
 }
 
+function validateProductCode(productCode) {
+  const normalized = String(productCode ?? "");
+  if (!/^\d{3}$/.test(normalized)) {
+    const err = new Error("Product code must be a unique three-digit number");
+    err.status = 422;
+    throw err;
+  }
+  return normalized;
+}
+
 export const ProductRepo = {
   list({ activeOnly = true, categorySlug, search, featured, sort, limit, offset = 0 } = {}) {
     const clauses = [];
@@ -96,12 +106,19 @@ export const ProductRepo = {
       .prepare(
         `SELECT COALESCE(MAX(CAST(product_code AS INTEGER)), 0) as maxCode
          FROM products
-         WHERE product_code GLOB '[0-9]*'`
+         WHERE product_code GLOB '[0-9][0-9][0-9]'`
       )
       .get();
-    return Number(row?.maxCode || 0) + 1;
+    const nextCode = Number(row?.maxCode || 0) + 1;
+    if (nextCode > 999) {
+      const err = new Error("Product code limit reached");
+      err.status = 422;
+      throw err;
+    }
+    return String(nextCode).padStart(3, "0");
   },
   create(p) {
+    p.productCode = validateProductCode(p.productCode);
     const existing = ProductRepo.findByCode(p.productCode);
     if (existing) {
       const err = new Error("Product code must be unique");
@@ -138,6 +155,7 @@ export const ProductRepo = {
     const current = ProductRepo.findById(id);
     if (!current) return null;
     const merged = { ...current, ...fields };
+    merged.productCode = validateProductCode(merged.productCode);
     if (merged.productCode !== current.productCode) {
       const existing = ProductRepo.findByCode(merged.productCode);
       if (existing && existing.id !== id) {

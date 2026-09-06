@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import PublicLayout from "./components/layout/PublicLayout";
 import Home from "./pages/public/Home";
@@ -28,9 +29,21 @@ import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail";
 import AdminSettings from "./pages/admin/AdminSettings";
 
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname, search]);
+
+  return null;
+}
+
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       {/* Public site */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
@@ -69,6 +82,7 @@ export default function App() {
         <Route path="customers/:id" element={<AdminCustomerDetail />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }
