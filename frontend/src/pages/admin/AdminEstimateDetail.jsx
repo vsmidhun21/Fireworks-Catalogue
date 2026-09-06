@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, User, Receipt, Loader2, Save } from "lucide-react";
+import { ArrowLeft, User, Receipt, Loader2, Save, CheckCircle2 } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
 
@@ -108,7 +108,8 @@ export default function AdminEstimateDetail() {
               <dt>Estimated Total</dt><dd className="text-brand-primary-dark">{formatCurrency(estimate.estimatedTotal)}</dd>
             </div>
             <div className="flex justify-between text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 mt-2 font-medium">
-              <span>Order Condition</span><span>✓ Min. order ₹3,000 met</span>
+              <span>Order Condition</span>
+              <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Min. order ₹3,000 met</span>
             </div>
             <div className="flex justify-between text-xs text-brand-muted pt-2 border-t border-brand-border">
               <dt>Submitted Date</dt><dd>{new Date(estimate.createdAt).toLocaleString()}</dd>

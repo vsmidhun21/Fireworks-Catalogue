@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, ShoppingBag } from "lucide-react";
+import { Search, ShoppingBag, ShieldCheck } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
@@ -92,7 +92,8 @@ export default function CategoryPage() {
           {/* 90% Offer Banner */}
           <div className="mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-300/80 flex items-center justify-between gap-3 text-xs sm:text-sm">
             <span className="font-semibold text-brand-navy">
-              🎉 Flat 90% Discount Always Applicable on All Products!
+              <ShieldCheck className="w-4 h-4 inline-block mr-1 align-text-bottom text-brand-primary" />
+              Flat 90% Discount Always Applicable on All Products!
             </span>
             <span className="font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full shrink-0">
               Min. Order ₹3,000

@@ -367,7 +367,6 @@ export default function AdminSettings() {
                   <span className="text-slate-200 font-medium whitespace-nowrap truncate max-w-[180px] sm:max-w-xs">
                     {item.message_text || "Remaining announcement text..."}
                   </span>
-                  <span className="text-amber-400/40 shrink-0">✦</span>
                 </div>
               ))}
             {tickerItems.filter((i) => i.is_active !== false).length === 0 && (

@@ -103,7 +103,6 @@ export default function RunningTicker() {
                 <span className="text-slate-200 hover:text-brand-gold transition-colors font-medium">
                   {item.text}
                 </span>
-                <span className="text-amber-400/40">✦</span>
               </div>
             ))}
           </div>

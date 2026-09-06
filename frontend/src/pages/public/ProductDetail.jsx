@@ -7,7 +7,10 @@ import { formatCurrency, discountPercent, whatsappLink } from "../../utils/forma
 import { useEstimate } from "../../context/EstimateContext";
 import { useSettings } from "../../context/SettingsContext";
 import { EmptyState } from "../../components/common/States";
+import ProductCard from "../../components/products/ProductCard";
 import { getProductImageUrl, onImageError } from "../../utils/image";
+
+const SUGGESTED_PRODUCTS_COUNT = 4;
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -19,6 +22,7 @@ export default function ProductDetail() {
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [suggestedProducts, setSuggestedProducts] = useState([]);
 
   useEffect(() => {
     setLoading(true);
@@ -28,6 +32,16 @@ export default function ProductDetail() {
       .then((res) => setProduct(res.data))
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
+
+    ProductService.list()
+      .then((res) => {
+        const products = (res.data.items || [])
+          .filter((item) => item.slug !== slug)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, SUGGESTED_PRODUCTS_COUNT);
+        setSuggestedProducts(products);
+      })
+      .catch(() => setSuggestedProducts([]));
   }, [slug]);
 
   if (loading) {
@@ -108,7 +122,10 @@ export default function ProductDetail() {
 
           {/* Festive Discount & Min Order Callout */}
           <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
-            <span className="font-semibold">🔥 Flat 90% Discount Always Applicable</span>
+            <span className="font-semibold flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-brand-primary" />
+              Flat 90% Discount Always Applicable
+            </span>
             <span className="font-bold text-brand-navy">Min. Order: ₹3,000</span>
           </div>
 
@@ -219,6 +236,29 @@ export default function ProductDetail() {
             </Link>
           </div>
         </div>
+      )}
+
+      {suggestedProducts.length > 0 && (
+        <section className="mt-12 sm:mt-16" aria-labelledby="explore-more-products">
+          <div className="flex items-end justify-between gap-4 mb-6">
+            <h2 id="explore-more-products" className="font-display text-xl sm:text-2xl font-bold text-brand-navy">
+              {t("product.exploreMore")}
+            </h2>
+            <Link to="/products" className="text-sm font-semibold text-brand-primary hover:underline shrink-0">
+              {t("home.viewAll")}
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {suggestedProducts.map((suggestedProduct) => (
+              <ProductCard key={suggestedProduct.id} product={suggestedProduct} />
+            ))}
+          </div>
+          <div className="flex justify-center mt-8">
+            <Link to="/products" className="btn-primary inline-flex items-center justify-center !py-3 !px-8 shadow-lg shadow-brand-orange/20 hover:scale-105 transition-all">
+              {t("home.viewAll")}
+            </Link>
+          </div>
+        </section>
       )}
     </div>
   );
