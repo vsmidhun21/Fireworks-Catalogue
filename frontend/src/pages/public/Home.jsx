@@ -200,9 +200,12 @@ export default function Home() {
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 {t("home.festivalBadge")}
               </span>
-              <span className="inline-flex items-center gap-1 bg-rose-500/20 border border-rose-400/40 text-rose-300 text-xs font-bold px-3 py-1.5 rounded-full">
-                <Percent className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1 bg-emerald-500/25 border border-emerald-400/50 text-emerald-300 text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
+                <Percent className="w-3.5 h-3.5" />
                 {t("home.discountBadge")}
+              </span>
+              <span className="inline-flex items-center gap-1 bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
+                {t("home.minOrderBadge")}
               </span>
             </div>
 
@@ -275,6 +278,38 @@ export default function Home() {
         <svg className="absolute bottom-0 left-0 w-full h-10 sm:h-14 text-brand-cream" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
           <path fill="currentColor" d="M0,32 C240,60 480,0 720,16 C960,32 1200,58 1440,28 L1440,60 L0,60 Z" />
         </svg>
+      </section>
+
+      {/* ── 90% MEGA DISCOUNT & MINIMUM ORDER FESTIVE SHOWCASE ── */}
+      <section className="container-page py-6 sm:py-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-600 via-rose-600 to-violet-800 text-white p-6 sm:p-10 shadow-xl">
+          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left max-w-xl">
+              <span className="inline-block bg-white/20 backdrop-blur border border-white/30 text-amber-200 text-xs font-black tracking-wider uppercase px-3 py-1 rounded-full mb-3">
+                LIMITED FESTIVE WHOLESALE OFFER
+              </span>
+              <h2 className="font-display text-2xl sm:text-4xl font-extrabold leading-tight mb-2">
+                Flat 90% Discount on All Sivakasi Fireworks!
+              </h2>
+              <p className="text-amber-100 text-sm sm:text-base leading-relaxed">
+                Direct factory pricing on 100% genuine Sivakasi crackers. Flat 90% discount is always applied to all products in your order. Minimum order price to place an order is <strong className="text-white underline decoration-amber-300 decoration-2">₹3,000</strong>.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full sm:w-auto">
+              <Link
+                to="/products"
+                className="btn-primary !bg-white !text-brand-navy hover:!bg-amber-100 px-6 py-3.5 text-center font-bold rounded-full shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2"
+              >
+                <span>Browse & Order Now</span>
+                <ArrowRight className="w-4 h-4 text-brand-primary" />
+              </Link>
+              {/* <div className="text-center text-xs text-amber-200 font-semibold">
+                ✓ Zero Advance · Price Discussion via Call / WhatsApp
+              </div> */}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── PROMO BANNERS ── */}

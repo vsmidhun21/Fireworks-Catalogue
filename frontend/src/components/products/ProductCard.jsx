@@ -8,7 +8,9 @@ import { getProductImageUrl, onImageError } from "../../utils/image";
 export default function ProductCard({ product }) {
   const { t, i18n } = useTranslation();
   const { addItem, updateQuantity, removeItem, items } = useEstimate();
-  const pct = discountPercent(product.originalPrice, product.discountedPrice);
+  const effectiveDiscountedPrice =
+    product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
+  const pct = discountPercent(product.originalPrice, effectiveDiscountedPrice);
   const name = i18n.language === "ta" && product.nameTa ? product.nameTa : product.nameEn;
 
   const orderItem = items.find((i) => i.productId === product.id);
@@ -30,7 +32,7 @@ export default function ProductCard({ product }) {
           </span>
         )}
         {pct > 0 && (
-          <span className="absolute top-2.5 right-2.5 bg-brand-orange text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+          <span className="absolute top-2.5 right-2.5 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
             -{pct}%
           </span>
         )}
@@ -50,9 +52,9 @@ export default function ProductCard({ product }) {
 
         <div className="mt-3 flex items-baseline gap-2">
           <span className="text-lg font-extrabold text-brand-primary-dark">
-            {formatCurrency(product.discountedPrice ?? product.originalPrice)}
+            {formatCurrency(effectiveDiscountedPrice)}
           </span>
-          {product.discountedPrice && product.discountedPrice < product.originalPrice && (
+          {effectiveDiscountedPrice < product.originalPrice && (
             <span className="text-sm text-brand-muted line-through">
               {formatCurrency(product.originalPrice)}
             </span>

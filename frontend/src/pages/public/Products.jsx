@@ -44,10 +44,32 @@ export default function Products() {
 
   return (
     <div className="container-page py-8 sm:py-12">
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="flex items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy">{t("nav.products")}</h1>
           <p className="text-sm text-brand-muted mt-1">{t("product.subtitle")}</p>
+        </div>
+      </div>
+
+      {/* 90% Offer & Minimum Order Banner */}
+      <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border border-amber-300/80 flex items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+            90%
+          </div>
+          <div>
+            <p className="font-display font-bold text-brand-navy text-sm sm:text-base">
+              {t("home.catalogueNotice")}
+            </p>
+            <p className="text-xs text-brand-muted">
+              Select crackers directly at Sivakasi factory rates · 90% discount is applied automatically in your order summary.
+            </p>
+          </div>
+        </div>
+        <div className="hidden md:flex shrink-0">
+          <span className="px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full">
+            Min. Order ₹3,000
+          </span>
         </div>
       </div>
 

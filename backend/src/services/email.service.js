@@ -1,4 +1,4 @@
-﻿import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 
 /**
  * Creates and returns a Nodemailer transporter configured for Gmail SMTP.
@@ -251,12 +251,17 @@ export function generateEstimateAdminEmailHtml(estimate) {
                       </tr>
                       ${estimate.totalDiscount > 0 ? `
                       <tr>
-                        <td style="padding: 4px 0; font-size: 13px; color: #16A34A;">Festive Discount:</td>
+                        <td style="padding: 4px 0; font-size: 13px; color: #16A34A;">Festive Discount (90%):</td>
                         <td style="padding: 4px 0; font-size: 13px; color: #16A34A; text-align: right; font-weight: 700;">- ${formatCurrency(estimate.totalDiscount)}</td>
                       </tr>` : ""}
                       <tr style="border-top: 1px solid #CBD5E1;">
                         <td style="padding: 8px 0 0 0; font-size: 14px; font-weight: 800; color: #0F172A;">Estimated Total:</td>
                         <td style="padding: 8px 0 0 0; font-size: 18px; font-weight: 900; color: #5B21B6; text-align: right;">${formatCurrency(estimate.estimatedTotal)}</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding-top: 6px; font-size: 11px; color: #059669; text-align: right; font-weight: 600;">
+                          ✓ Flat 90% discount applied · Min. order ₹3,000 satisfied
+                        </td>
                       </tr>
                     </table>
                   </td>
@@ -312,7 +317,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
 /**
  * Generates plain text version of the estimate email for non-HTML email clients.
  */
-function generateEstimateAdminEmailText(estimate) {
+export function generateEstimateAdminEmailText(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
 
@@ -358,9 +363,10 @@ function generateEstimateAdminEmailText(estimate) {
     "-----------------------------------------------------------",
     "FINANCIAL SUMMARY",
     "-----------------------------------------------------------",
-    `Subtotal        : ${formatCurrency(estimate.subtotal)}`,
-    `Discount        : ${formatCurrency(estimate.totalDiscount)}`,
+    `Subtotal (MRP)  : ${formatCurrency(estimate.subtotal)}`,
+    `Discount (90%)  : -${formatCurrency(estimate.totalDiscount)}`,
     `Estimated Total : ${formatCurrency(estimate.estimatedTotal)}`,
+    `Status          : Minimum order requirement (₹3,000) satisfied`,
     "",
     "-----------------------------------------------------------",
     "ACTION REQUIRED:",

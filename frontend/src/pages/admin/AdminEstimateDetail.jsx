@@ -102,10 +102,13 @@ export default function AdminEstimateDetail() {
             <h2 className="font-display font-semibold text-brand-navy">Financial Summary</h2>
           </div>
           <dl className="text-sm space-y-2">
-            <div className="flex justify-between"><dt className="text-brand-muted">Subtotal</dt><dd className="font-medium">{formatCurrency(estimate.subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-brand-muted">Total Savings</dt><dd className="text-brand-success font-medium">-{formatCurrency(estimate.totalDiscount)}</dd></div>
+            <div className="flex justify-between"><dt className="text-brand-muted">Retail Subtotal (MRP)</dt><dd className="font-medium">{formatCurrency(estimate.subtotal)}</dd></div>
+            <div className="flex justify-between"><dt className="text-brand-muted">Festive Discount (90%)</dt><dd className="text-emerald-600 font-bold">-{formatCurrency(estimate.totalDiscount)}</dd></div>
             <div className="flex justify-between font-bold text-brand-navy text-base border-t border-brand-border pt-2 mt-1">
               <dt>Estimated Total</dt><dd className="text-brand-primary-dark">{formatCurrency(estimate.estimatedTotal)}</dd>
+            </div>
+            <div className="flex justify-between text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 mt-2 font-medium">
+              <span>Order Condition</span><span>✓ Min. order ₹3,000 met</span>
             </div>
             <div className="flex justify-between text-xs text-brand-muted pt-2 border-t border-brand-border">
               <dt>Submitted Date</dt><dd>{new Date(estimate.createdAt).toLocaleString()}</dd>
@@ -120,7 +123,7 @@ export default function AdminEstimateDetail() {
             <tr className="bg-slate-50 text-brand-muted border-b border-brand-border uppercase text-[11px] tracking-wider font-semibold">
               <th className="py-3 px-4">Product Item</th>
               <th className="py-3 px-4 text-center">Quantity</th>
-              <th className="py-3 px-4">Unit Price</th>
+              <th className="py-3 px-4">Price (90% Off / MRP)</th>
               <th className="py-3 px-4 text-right">Line Total</th>
             </tr>
           </thead>
@@ -132,7 +135,16 @@ export default function AdminEstimateDetail() {
                   <p className="text-xs text-brand-muted">{item.productCode} · {item.unit}</p>
                 </td>
                 <td className="py-3 px-4 text-center font-semibold">{item.quantity}</td>
-                <td className="py-3 px-4">{formatCurrency(item.discountedUnitPrice ?? item.originalUnitPrice)}</td>
+                <td className="py-3 px-4">
+                  <span className="font-bold text-brand-navy">
+                    {formatCurrency(item.discountedUnitPrice ?? Math.round(item.originalUnitPrice * 0.10))}
+                  </span>
+                  {item.originalUnitPrice > (item.discountedUnitPrice ?? 0) && (
+                    <span className="text-xs text-slate-400 line-through ml-2">
+                      {formatCurrency(item.originalUnitPrice)}
+                    </span>
+                  )}
+                </td>
                 <td className="py-3 px-4 text-right font-bold text-brand-navy">{formatCurrency(item.lineTotal)}</td>
               </tr>
             ))}

@@ -17,11 +17,14 @@ export function EstimateProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
+  const MIN_ORDER_AMOUNT = 3000;
+
   function addItem(product, quantity = 1) {
     setItems((prev) => {
+      const unitDiscounted = product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
-        return prev.map((i) => (i.productId === product.id ? { ...i, quantity: i.quantity + quantity } : i));
+        return prev.map((i) => (i.productId === product.id ? { ...i, quantity: i.quantity + quantity, discountedPrice: unitDiscounted } : i));
       }
       return [
         ...prev,
@@ -33,7 +36,7 @@ export function EstimateProvider({ children }) {
           unit: product.unit,
           imageUrl: product.imageUrl,
           originalPrice: product.originalPrice,
-          discountedPrice: product.discountedPrice,
+          discountedPrice: unitDiscounted,
           quantity,
         },
       ];
@@ -56,12 +59,27 @@ export function EstimateProvider({ children }) {
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, i) => sum + i.originalPrice * i.quantity, 0);
-    const estimatedTotal = items.reduce((sum, i) => sum + (i.discountedPrice ?? i.originalPrice) * i.quantity, 0);
-    return { subtotal, estimatedTotal, discount: subtotal - estimatedTotal, count: items.reduce((s, i) => s + i.quantity, 0) };
+    const estimatedTotal = items.reduce(
+      (sum, i) => sum + (i.discountedPrice != null ? i.discountedPrice : Math.round(i.originalPrice * 0.10)) * i.quantity,
+      0
+    );
+    const discount = subtotal - estimatedTotal;
+    const isMinOrderMet = estimatedTotal >= MIN_ORDER_AMOUNT;
+    const amountNeededForMinOrder = Math.max(0, MIN_ORDER_AMOUNT - estimatedTotal);
+
+    return {
+      subtotal,
+      estimatedTotal,
+      discount,
+      count: items.reduce((s, i) => s + i.quantity, 0),
+      minOrderAmount: MIN_ORDER_AMOUNT,
+      isMinOrderMet,
+      amountNeededForMinOrder,
+    };
   }, [items]);
 
   return (
-    <EstimateContext.Provider value={{ items, addItem, updateQuantity, removeItem, clear, totals }}>
+    <EstimateContext.Provider value={{ items, addItem, updateQuantity, removeItem, clear, totals, MIN_ORDER_AMOUNT }}>
       {children}
     </EstimateContext.Provider>
   );

@@ -17,14 +17,16 @@ export default function CustomerDetails() {
   const [apiError, setApiError] = useState("");
   const submittedRef = useRef(false);
 
-  // Redirect to products if no items
+  // Redirect to products if no items, or to estimate if below minimum order
   useEffect(() => {
     if (items.length === 0 && !submittedRef.current) {
       navigate("/products", { replace: true });
+    } else if (totals.estimatedTotal < 3000 && !submittedRef.current) {
+      navigate("/estimate", { replace: true });
     }
-  }, [items.length, navigate]);
+  }, [items.length, totals.estimatedTotal, navigate]);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 || totals.estimatedTotal < 3000) return null;
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -49,6 +51,10 @@ export default function CustomerDetails() {
   async function handleSubmit(e) {
     e.preventDefault();
     setApiError("");
+    if (totals.estimatedTotal < 3000) {
+      setApiError("Minimum order price is ₹3,000. Please add more crackers to place your order.");
+      return;
+    }
     if (!validate()) return;
     setSubmitting(true);
     try {
@@ -84,18 +90,23 @@ export default function CustomerDetails() {
         <span>{t("estimate.backToEstimate")}</span>
       </Link>
       <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-navy mt-1 mb-2">{t("estimate.customerDetails")}</h1>
-      <p className="text-sm text-brand-muted mb-6">
+      <p className="text-sm text-brand-muted mb-4">
         {t("estimate.orderForItems", {
           count: totals.count,
           amount: new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totals.estimatedTotal),
         })}
       </p>
 
-      {/* Note box */}
-      {/* <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-sm text-amber-900 flex items-start gap-2">
-        <ShoppingCart className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-        <span>{t("estimate.noAdvanceNote")}</span>
-      </div> */}
+      {/* Order Summary Strip */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-6 flex items-center justify-between gap-3 text-emerald-900 text-xs sm:text-sm shadow-sm">
+        <div>
+          <span className="font-bold text-emerald-800">Flat 90% Discount Applied</span>
+          <span className="text-emerald-700 hidden sm:inline"> · Min. order ₹3,000 requirement satisfied</span>
+        </div>
+        <div className="font-extrabold text-emerald-900 text-sm sm:text-base shrink-0">
+          {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totals.estimatedTotal)}
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="card-surface p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5 rounded-2xl border border-brand-border shadow-sm" noValidate>
         {fields.map((f) => (

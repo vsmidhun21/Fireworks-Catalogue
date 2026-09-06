@@ -45,7 +45,9 @@ export default function ProductDetail() {
 
   const name = i18n.language === "ta" && product.nameTa ? product.nameTa : product.nameEn;
   const description = i18n.language === "ta" && product.descriptionTa ? product.descriptionTa : product.descriptionEn;
-  const pct = discountPercent(product.originalPrice, product.discountedPrice);
+  const effectiveDiscountedPrice =
+    product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
+  const pct = discountPercent(product.originalPrice, effectiveDiscountedPrice);
 
   const orderItem = items.find((i) => i.productId === product.id);
 
@@ -89,18 +91,26 @@ export default function ProductDetail() {
 
           <div className="flex items-baseline gap-3 mt-5">
             <span className="text-3xl font-bold text-brand-primary-dark">
-              {formatCurrency(product.discountedPrice ?? product.originalPrice)}
+              {formatCurrency(effectiveDiscountedPrice)}
             </span>
-            {product.discountedPrice && product.discountedPrice < product.originalPrice && (
+            {effectiveDiscountedPrice < product.originalPrice && (
               <>
                 <span className="text-lg text-brand-muted line-through">{formatCurrency(product.originalPrice)}</span>
-                <span className="text-sm font-bold text-brand-orange">-{pct}%</span>
+                <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                  -{pct}% OFF
+                </span>
               </>
             )}
           </div>
           <p className="text-sm text-brand-muted mt-1 font-medium">
             {t("product.unit")}: <strong>{product.unit}</strong> &nbsp;·&nbsp; {t("product.code")}: <strong>{product.productCode}</strong>
           </p>
+
+          {/* Festive Discount & Min Order Callout */}
+          <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
+            <span className="font-semibold">🔥 Flat 90% Discount Always Applicable</span>
+            <span className="font-bold text-brand-navy">Min. Order: ₹3,000</span>
+          </div>
 
           {description && (
             <div className="mt-5">

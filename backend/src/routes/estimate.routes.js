@@ -65,7 +65,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
         return fail(res, `Product ${item.productId} is unavailable`, 422);
       }
       const unitOriginal = product.originalPrice;
-      const unitDiscounted = product.discountedPrice ?? product.originalPrice;
+      const unitDiscounted = product.discountedPrice != null ? product.discountedPrice : Math.round(unitOriginal * 0.10);
       const lineTotal = unitDiscounted * quantity;
 
       subtotal += unitOriginal * quantity;
@@ -85,6 +85,18 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
     }
 
     const totalDiscount = subtotal - estimatedTotal;
+
+    // Minimum order condition: to place an order, minimum order price must be ₹3,000
+    const MIN_ORDER_PRICE = 3000;
+    if (estimatedTotal < MIN_ORDER_PRICE) {
+      return fail(
+        res,
+        `Minimum order price is ₹${MIN_ORDER_PRICE.toLocaleString("en-IN")}. Your current order total is ₹${estimatedTotal.toLocaleString("en-IN")}. Please add more items to place your order.`,
+        422,
+        [`estimatedTotal must be at least ${MIN_ORDER_PRICE}`]
+      );
+    }
+
     const estimateNumber = generateEstimateNumber();
 
     const dbCustomer = CustomerRepo.create({

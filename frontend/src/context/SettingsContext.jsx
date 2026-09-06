@@ -12,10 +12,10 @@ const SettingsContext = createContext({
 export const DEFAULT_TICKER_ITEMS = [
   {
     id: "ticker-1",
-    highlight_text: "MEGA DIWALI SALE",
+    highlight_text: "MEGA 90% DISCOUNT",
     highlight_color: "#fbbf24",
     highlight_text_color: "#020617",
-    message_text: "Special Diwali Festive Discounts Live! Up to 90% Off Retail Prices!",
+    message_text: "Flat 90% Discount Always Applicable on All Sivakasi Crackers!",
     is_active: true,
   },
   {
@@ -28,7 +28,7 @@ export const DEFAULT_TICKER_ITEMS = [
   },
   {
     id: "ticker-3",
-    highlight_text: "PAN-INDIA DISPATCH",
+    highlight_text: "MINIMUM ORDER ₹3,000",
     highlight_color: "#34d399",
     highlight_text_color: "#020617",
     message_text: "Fast & Safe Transport Across India · Minimum Order ₹3,000",

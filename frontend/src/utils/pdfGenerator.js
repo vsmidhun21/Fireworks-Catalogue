@@ -130,13 +130,123 @@ function formatPrice(value) {
   });
 }
 
-function buildTableRows(groups, accentRgb) {
+// ---- Layout constants shared between row-height estimation and the actual
+// autoTable configuration below. Keeping a single source of truth here is
+// what lets buildTableRows() simulate pagination accurately enough to avoid
+// orphaned category headings, without duplicating magic numbers. ----
+const COLUMN_WIDTHS = [15, 48, 43, 19, 18, 25, 14]; // mm, matches columnStyles
+const PRODUCT_NAME_COLUMN = 1;
+const BODY_FONT_SIZE = 7.4;
+const BODY_CELL_PADDING = 1.6;
+const BODY_MIN_ROW_HEIGHT = 8; // matches column 2's minCellHeight
+const BAND_FONT_SIZE = 9.5;
+const BAND_CELL_PADDING = 2.2;
+const LINE_HEIGHT_FACTOR = 1.15;
+const MM_PER_PT = 0.3528;
+
+/** Conservative text-block height in mm for `lines` lines at `fontSize` pt, plus vertical padding. */
+function estimateTextBlockHeight(lines, fontSize, cellPadding) {
+  const lineHeightMm = fontSize * MM_PER_PT * LINE_HEIGHT_FACTOR;
+  return cellPadding * 2 + Math.max(1, lines) * lineHeightMm;
+}
+
+/**
+ * Estimates a rendered product row's height, accounting for product-name
+ * wrapping. This must stay an *unpadded*, best-effort match of autoTable's
+ * own Cell.getContentHeight() formula (same line-height/padding constants) -
+ * adding a fixed "safety buffer" here would compound across every row over
+ * a multi-page table and make the running total drift far from reality.
+ */
+function estimateProductRowHeight(doc, product) {
+  const availableWidth = COLUMN_WIDTHS[PRODUCT_NAME_COLUMN] - BODY_CELL_PADDING * 2;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(BODY_FONT_SIZE);
+  const wrapped = doc.splitTextToSize(product.nameEn || "", availableWidth);
+  const textHeight = estimateTextBlockHeight(wrapped.length, BODY_FONT_SIZE, BODY_CELL_PADDING);
+  return Math.max(BODY_MIN_ROW_HEIGHT, textHeight);
+}
+
+/** Estimates a category band row's height (always a single centered line). */
+function estimateBandRowHeight() {
+  return estimateTextBlockHeight(1, BAND_FONT_SIZE, BAND_CELL_PADDING);
+}
+
+const TABLE_HEAD_LABELS = ["Code", "Product Name", "Tamil Name", "MRP (Rs.)", "Unit", "Offer Price (Rs.)", "Qty"];
+const HEAD_FONT_SIZE = 8.5;
+const HEAD_CELL_PADDING = 2.2;
+
+/**
+ * Estimates the repeated table-header row's real height by checking how many
+ * lines each header label wraps to in its own column (e.g. "Offer Price
+ * (Rs.)" wraps to 2 lines in its 25mm column) - getting this right matters
+ * because it's added to the simulated cursor every time a new page starts.
+ */
+function estimateHeadRowHeight(doc) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(HEAD_FONT_SIZE);
+  const maxLines = TABLE_HEAD_LABELS.reduce((max, label, i) => {
+    const availableWidth = COLUMN_WIDTHS[i] - HEAD_CELL_PADDING * 2;
+    const wrapped = doc.splitTextToSize(label, availableWidth);
+    return Math.max(max, wrapped.length);
+  }, 1);
+  return estimateTextBlockHeight(maxLines, HEAD_FONT_SIZE, HEAD_CELL_PADDING);
+}
+
+// Small, fixed safety margin used only when deciding whether a heading would
+// be orphaned (never added to the running cumulative total - see comment
+// above). This tightens (not loosens) the available-space check so a
+// genuinely borderline fit - like a row that's short by a fraction of a
+// millimetre - is treated as "won't fit" rather than being risked.
+const ORPHAN_CHECK_SAFETY_MARGIN = 2.5;
+
+function buildTableRows(doc, groups, accentRgb, layout) {
   const rows = [];
   const bandColor = tint(accentRgb, 0.86);
   const bandText = accentRgb.map((c) => Math.round(c * 0.55));
+  const { tableStartY, marginTop, pageBottom, headHeight } = layout;
+
+  // Simulated running cursor, mirroring how autoTable will actually paginate,
+  // so we can detect a category heading that would otherwise be printed with
+  // no room left for a single product row beneath it (an "orphaned" heading).
+  // Starts after the table's own header row, exactly like the real table.
+  let simulatedY = tableStartY + headHeight;
+
+  function simulateAdvance(height) {
+    if (simulatedY + height > pageBottom) {
+      simulatedY = marginTop + headHeight;
+    }
+    simulatedY += height;
+  }
 
   for (const group of groups) {
     if (!group.items.length) continue;
+
+    const bandHeight = estimateBandRowHeight();
+    const firstRowHeight = estimateProductRowHeight(doc, group.items[0]);
+
+    // Would the heading alone still fit on the current page, but leave no
+    // room for the first product row underneath it? If so, insert an
+    // invisible spacer row that exactly fills the remaining space, which
+    // makes autoTable's own page-break logic naturally start this category
+    // on a fresh page (with the table header correctly repeated), instead of
+    // us manually drawing anything at fixed coordinates.
+    const fitsAlone = simulatedY + bandHeight <= pageBottom - ORPHAN_CHECK_SAFETY_MARGIN;
+    const fitsWithFirstRow = simulatedY + bandHeight + firstRowHeight <= pageBottom - ORPHAN_CHECK_SAFETY_MARGIN;
+    if (fitsAlone && !fitsWithFirstRow) {
+      const spacerHeight = Math.max(pageBottom - simulatedY, 0.01);
+      rows.push([
+        {
+          content: "",
+          colSpan: 7,
+          styles: {
+            minCellHeight: spacerHeight,
+            fillColor: false,
+            lineWidth: 0,
+          },
+        },
+      ]);
+      simulatedY = marginTop + headHeight;
+    }
 
     rows.push([
       {
@@ -154,14 +264,16 @@ function buildTableRows(groups, accentRgb) {
           textColor: bandText,
           fontStyle: "bold",
           halign: "center",
-          fontSize: 9.5,
-          cellPadding: 2.2,
+          fontSize: BAND_FONT_SIZE,
+          cellPadding: BAND_CELL_PADDING,
         },
       },
     ]);
+    simulateAdvance(bandHeight);
 
     group.items.forEach((product) => {
-      const hasDiscount = product.discountedPrice != null && product.discountedPrice < product.originalPrice;
+      const discPrice = product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
+      const hasDiscount = discPrice < product.originalPrice;
       rows.push([
         product.productCode || "-",
         product.nameEn || "",
@@ -169,11 +281,12 @@ function buildTableRows(groups, accentRgb) {
         formatPrice(product.originalPrice),
         product.unit || "Box",
         {
-          content: formatPrice(product.discountedPrice ?? product.originalPrice),
+          content: formatPrice(discPrice),
           styles: hasDiscount ? { textColor: [21, 128, 61] } : {},
         },
         "",
       ]);
+      simulateAdvance(estimateProductRowHeight(doc, product));
     });
   }
 
@@ -245,8 +358,31 @@ export async function downloadPriceListPDF(options = {}) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const HEADER_HEIGHT = 46;
+    const SUMMARY_STRIP_HEIGHT = 8.5;
+    const SUMMARY_STRIP_GAP = 6; // space between header band and summary strip
+    const CONTENT_TOP_GAP = 4; // space between summary strip and table
+    // Full height every page must reserve at the top for drawHeader()'s brand
+    // band + summary strip. This is the single source of truth for where the
+    // table (and its repeated header row) may safely start on ANY page -
+    // using one value everywhere is what prevents the table from starting
+    // underneath the header on page 2+.
+    const HEADER_RESERVED_HEIGHT = HEADER_HEIGHT + SUMMARY_STRIP_GAP + SUMMARY_STRIP_HEIGHT + CONTENT_TOP_GAP;
+    const BOTTOM_MARGIN = 20; // comfortable clearance above the footer text/line
     const FOOTER_Y = pageHeight - 12;
-    const tableBody = buildTableRows(groupedCategories, accentRgb);
+    const tableStartY = HEADER_RESERVED_HEIGHT;
+    const pageBottom = pageHeight - BOTTOM_MARGIN;
+    // Real repeated-header-row height (accounts for labels like "Offer Price
+    // (Rs.)" wrapping to 2 lines in their column) - used to simulate
+    // pagination in buildTableRows() so the running total starts fresh pages
+    // at the same point the real table does.
+    const TABLE_HEAD_ROW_HEIGHT = estimateHeadRowHeight(doc);
+
+    const tableBody = buildTableRows(doc, groupedCategories, accentRgb, {
+      tableStartY,
+      marginTop: tableStartY,
+      pageBottom,
+      headHeight: TABLE_HEAD_ROW_HEIGHT,
+    });
 
     function drawHeader() {
       // Dark brand-color header band
@@ -311,36 +447,39 @@ export async function downloadPriceListPDF(options = {}) {
       }
 
       // Summary strip: total categories / products / generated date
-      const stripY = HEADER_HEIGHT + 6;
+      const stripY = HEADER_HEIGHT + SUMMARY_STRIP_GAP;
       doc.setFillColor(...tint(primaryRgb, 0.93));
-      doc.roundedRect(8, stripY, pageWidth - 16, 8.5, 2.5, 2.5, "F");
+      doc.roundedRect(8, stripY, pageWidth - 16, SUMMARY_STRIP_HEIGHT, 2.5, 2.5, "F");
       doc.setDrawColor(...tint(primaryRgb, 0.7));
       doc.setLineWidth(0.2);
-      doc.roundedRect(8, stripY, pageWidth - 16, 8.5, 2.5, 2.5, "S");
+      doc.roundedRect(8, stripY, pageWidth - 16, SUMMARY_STRIP_HEIGHT, 2.5, 2.5, "S");
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(...primaryRgb.map((c) => Math.round(c * 0.7)));
-      const summaryText = `${totalCategories} Categories   -   ${totalActiveProducts} Products   -   Prices in Indian Rupees (Rs.)`;
+      const summaryText = `${totalCategories} Categories  •  ${totalActiveProducts} Products  •  Flat 90% Discount  •  Min. Order Rs. 3,000`;
       doc.text(summaryText, pageWidth / 2, stripY + 5.6, { align: "center" });
-
-      return stripY + 8.5 + 4;
     }
-
-    const tableStartY = HEADER_HEIGHT + 6 + 8.5 + 4;
 
     autoTable(doc, {
       startY: tableStartY,
-      margin: { top: HEADER_HEIGHT + 6, left: 8, right: 8, bottom: 16 },
+      // `margin.top` must match the space drawHeader() actually occupies
+      // (HEADER_RESERVED_HEIGHT) on every page, not just the first — this is
+      // what previously let page-2+ table content (including the repeated
+      // header row) start underneath the brand header/summary strip.
+      margin: { top: HEADER_RESERVED_HEIGHT, left: 8, right: 8, bottom: BOTTOM_MARGIN },
+      // A row that doesn't fully fit on the current page is moved to the next
+      // page in one piece instead of being split/clipped across the two.
+      rowPageBreak: "avoid",
       head: [
         [
-          { content: "Code", styles: { halign: "center" } },
-          { content: "Product Name", styles: { halign: "left" } },
-          { content: "Tamil Name", styles: { halign: "left" } },
-          { content: "MRP (Rs.)", styles: { halign: "right" } },
-          { content: "Unit", styles: { halign: "center" } },
-          { content: "Offer Price (Rs.)", styles: { halign: "right" } },
-          { content: "Qty", styles: { halign: "center" } },
+          { content: TABLE_HEAD_LABELS[0], styles: { halign: "center" } },
+          { content: TABLE_HEAD_LABELS[1], styles: { halign: "left" } },
+          { content: TABLE_HEAD_LABELS[2], styles: { halign: "left" } },
+          { content: TABLE_HEAD_LABELS[3], styles: { halign: "right" } },
+          { content: TABLE_HEAD_LABELS[4], styles: { halign: "center" } },
+          { content: TABLE_HEAD_LABELS[5], styles: { halign: "right" } },
+          { content: TABLE_HEAD_LABELS[6], styles: { halign: "center" } },
         ],
       ],
       body: tableBody,
@@ -386,9 +525,19 @@ export async function downloadPriceListPDF(options = {}) {
           drawProductTamilName(doc, data);
         }
       },
-      didDrawPage: () => {
+      // willDrawPage fires once at the very start of every page - including
+      // page 1 - right after the cursor is reset and BEFORE that page's
+      // repeated table header/rows are drawn. Drawing the brand header here
+      // (instead of in didDrawPage, which fires at the END of a page, after
+      // its content is already in place) is what stops the header from being
+      // painted on top of already-drawn table content on page 2+.
+      willDrawPage: () => {
         drawHeader();
-
+      },
+      // didDrawPage fires once at the end of every page (right before moving
+      // on, or once for the final page), which is the correct place for
+      // footer content.
+      didDrawPage: () => {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(6.8);
         doc.setTextColor(120, 130, 145);

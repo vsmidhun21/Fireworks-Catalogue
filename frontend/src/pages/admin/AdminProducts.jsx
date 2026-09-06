@@ -330,24 +330,32 @@ export default function AdminProducts() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-brand-navy mb-1">Original Price (Rs.) *</label>
+            <label className="block text-sm font-semibold text-brand-navy mb-1">Original Price / MRP (Rs.) *</label>
             <input
               required
               type="number"
               step="0.01"
               placeholder="e.g. 150"
               value={form.originalPrice}
-              onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
+              onChange={(e) => {
+                const val = e.target.value;
+                const num = parseFloat(val);
+                const autoDiscount = !isNaN(num) && num > 0 ? String(Math.round(num * 0.10)) : "";
+                setForm({ ...form, originalPrice: val, discountedPrice: autoDiscount });
+              }}
               className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-brand-navy mb-1">Discounted Price (Rs.)</label>
+            <label className="block text-sm font-semibold text-brand-navy mb-1">
+              Offer Price / 90% Off (Rs.)
+              <span className="text-xs text-emerald-600 font-normal ml-1">(90% discount)</span>
+            </label>
             <input
               type="number"
               step="0.01"
-              placeholder="e.g. 99 (optional)"
+              placeholder="e.g. 15 (auto 90% off)"
               value={form.discountedPrice}
               onChange={(e) => setForm({ ...form, discountedPrice: e.target.value })}
               className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
@@ -544,13 +552,11 @@ export default function AdminProducts() {
                     <td className="py-3 px-4 text-brand-muted font-medium">{p.category?.nameEn || "-"}</td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <div className="font-semibold text-brand-navy">
-                        {formatCurrency(p.discountedPrice ?? p.originalPrice)}
+                        {formatCurrency(p.discountedPrice != null ? p.discountedPrice : Math.round(p.originalPrice * 0.10))}
                       </div>
-                      {p.discountedPrice && (
-                        <div className="text-xs text-brand-muted line-through">
-                          {formatCurrency(p.originalPrice)}
-                        </div>
-                      )}
+                      <div className="text-xs text-brand-muted line-through">
+                        {formatCurrency(p.originalPrice)}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button

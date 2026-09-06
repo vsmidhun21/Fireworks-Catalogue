@@ -88,6 +88,16 @@ export default function CategoryPage() {
               : category.descriptionEn;
             return description && <p className="text-brand-muted mt-2 max-w-2xl">{description}</p>;
           })()}
+
+          {/* 90% Offer Banner */}
+          <div className="mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-300/80 flex items-center justify-between gap-3 text-xs sm:text-sm">
+            <span className="font-semibold text-brand-navy">
+              🎉 Flat 90% Discount Always Applicable on All Products!
+            </span>
+            <span className="font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full shrink-0">
+              Min. Order ₹3,000
+            </span>
+          </div>
         </div>
       )}
 
