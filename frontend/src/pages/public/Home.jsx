@@ -300,6 +300,9 @@ export default function Home() {
                 <span>Browse & Order Now</span>
                 <ArrowRight className="w-4 h-4 text-brand-primary" />
               </Link>
+              {/* <div className="text-center text-xs text-amber-200 font-semibold">
+                ✓ Zero Advance · Price Discussion via Call / WhatsApp
+              </div> */}
             </div>
           </div>
         </div>
