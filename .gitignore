@@ -9,5 +9,6 @@ backend/data/*.db-wal
 .DS_Store
 
 notes.txt
+Audit.md
 
 backend/uploads/*
