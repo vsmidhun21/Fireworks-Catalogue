@@ -65,7 +65,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
         return fail(res, `Product ${item.productId} is unavailable`, 422);
       }
       const unitOriginal = product.originalPrice;
-      const unitDiscounted = product.discountedPrice != null ? product.discountedPrice : unitOriginal;
+      const unitDiscounted = product.discountedPrice != null ? product.discountedPrice : Math.round(unitOriginal * 0.10);
       const lineTotal = unitDiscounted * quantity;
 
       subtotal += unitOriginal * quantity;

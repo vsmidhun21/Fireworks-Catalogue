@@ -110,16 +110,6 @@ export function generateEstimateAdminEmailHtml(estimate) {
     })
     .join("");
 
-  // Compute offer-price subtotal (sum of discountedUnitPrice × qty) — mirrors frontend EstimateContext.
-  // The DB `subtotal` field stores MRP totals; we derive the display values from items directly
-  // so the email matches exactly what the customer saw on screen.
-  const offerSubtotal = items.reduce(
-    (sum, item) => sum + (item.discountedUnitPrice != null ? item.discountedUnitPrice : item.originalUnitPrice) * item.quantity,
-    0
-  );
-  const festivalDiscount = offerSubtotal * 0.90;
-  const displayEstimatedTotal = offerSubtotal - festivalDiscount;
-
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -187,7 +177,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
                       </tr>
                       <tr>
                         <td style="font-size: 14px; color: #0F172A; font-weight: 600; padding-top: 4px;">${formatDate(estimate.createdAt)}</td>
-                        <td style="font-size: 20px; color: #5B21B6; font-weight: 800; text-align: right; padding-top: 4px;">${formatCurrency(displayEstimatedTotal)}</td>
+                        <td style="font-size: 20px; color: #5B21B6; font-weight: 800; text-align: right; padding-top: 4px;">${formatCurrency(estimate.estimatedTotal)}</td>
                       </tr>
                     </table>
                   </td>
@@ -257,16 +247,16 @@ export function generateEstimateAdminEmailHtml(estimate) {
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px 16px;">
                       <tr>
                         <td style="padding: 4px 0; font-size: 13px; color: #64748B;">Retail Subtotal:</td>
-                        <td style="padding: 4px 0; font-size: 13px; color: #1E293B; text-align: right; font-weight: 600;">${formatCurrency(offerSubtotal)}</td>
+                        <td style="padding: 4px 0; font-size: 13px; color: #1E293B; text-align: right; font-weight: 600;">${formatCurrency(estimate.subtotal)}</td>
                       </tr>
-                      ${festivalDiscount > 0 ? `
+                      ${estimate.totalDiscount > 0 ? `
                       <tr>
                         <td style="padding: 4px 0; font-size: 13px; color: #16A34A;">Festive Discount (90%):</td>
-                        <td style="padding: 4px 0; font-size: 13px; color: #16A34A; text-align: right; font-weight: 700;">- ${formatCurrency(festivalDiscount)}</td>
+                        <td style="padding: 4px 0; font-size: 13px; color: #16A34A; text-align: right; font-weight: 700;">- ${formatCurrency(estimate.totalDiscount)}</td>
                       </tr>` : ""}
                       <tr style="border-top: 1px solid #CBD5E1;">
                         <td style="padding: 8px 0 0 0; font-size: 14px; font-weight: 800; color: #0F172A;">Estimated Total:</td>
-                        <td style="padding: 8px 0 0 0; font-size: 18px; font-weight: 900; color: #5B21B6; text-align: right;">${formatCurrency(displayEstimatedTotal)}</td>
+                        <td style="padding: 8px 0 0 0; font-size: 18px; font-weight: 900; color: #5B21B6; text-align: right;">${formatCurrency(estimate.estimatedTotal)}</td>
                       </tr>
                       <tr>
                         <td colspan="2" style="padding-top: 6px; font-size: 11px; color: #059669; text-align: right; font-weight: 600;">
