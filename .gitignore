@@ -9,3 +9,5 @@ backend/data/*.db-wal
 .DS_Store
 
 notes.txt
+
+backend/uploads/*
