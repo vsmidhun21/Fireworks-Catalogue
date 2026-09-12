@@ -61,9 +61,9 @@ export default function Products() {
             <p className="font-display font-bold text-brand-navy text-sm sm:text-base">
               {t("home.catalogueNotice")}
             </p>
-            <p className="text-xs text-brand-muted">
+            {/* <p className="text-xs text-brand-muted">
               Select crackers directly at Sivakasi factory rates · 90% discount is applied automatically in your order summary.
-            </p>
+            </p> */}
           </div>
         </div>
         <div className="hidden md:flex shrink-0">

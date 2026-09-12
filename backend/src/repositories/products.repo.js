@@ -14,7 +14,7 @@ function rowToProduct(r) {
     descriptionTa: r.description_ta,
     unit: r.unit,
     originalPrice: r.original_price,
-    discountedPrice: r.discounted_price != null ? r.discounted_price : Math.round(r.original_price * 0.10),
+    discountedPrice: r.discounted_price != null ? r.discounted_price : r.original_price,
     imageUrl: r.image_url,
     isFeatured: !!r.is_featured,
     isNewArrival: !!r.is_new_arrival,

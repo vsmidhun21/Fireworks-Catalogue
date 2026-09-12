@@ -19,6 +19,12 @@ import { getProductImageUrl, onImageError } from "../../utils/image";
 export default function Estimate() {
   const { t, i18n } = useTranslation();
   const { items, updateQuantity, removeItem, totals } = useEstimate();
+  
+  // useEffect(() => {
+  //   console.log("Estimate items:", items);
+  //   console.log("Estimate totals:", totals);
+  // }, [items, totals]);
+
   const navigate = useNavigate();
 
   // If empty, redirect to products
@@ -77,7 +83,7 @@ export default function Estimate() {
         <div className="lg:col-span-2 space-y-3">
           {items.map((item) => {
             const name = i18n.language === "ta" && item.nameTa ? item.nameTa : item.nameEn;
-            const unitPrice = item.discountedPrice != null ? item.discountedPrice : Math.round(item.originalPrice * 0.10);
+            const unitPrice = item.discountedPrice != null ? item.discountedPrice : item.originalPrice;
             return (
               <div key={item.productId} className="card-surface grid grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 p-3 rounded-xl border border-brand-border/80 shadow-sm sm:flex sm:gap-4 sm:p-4">
                 <div className="row-span-2 w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden border border-brand-border/50 sm:row-span-1">
@@ -98,7 +104,7 @@ export default function Estimate() {
                         <span className="text-slate-400 line-through text-[11px]">{formatCurrency(item.originalPrice)}</span>
                       )}
                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                        -90%
+                        Offer price
                       </span>
                     </div>
                   </div>
@@ -192,7 +198,7 @@ export default function Estimate() {
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold">{t("estimate.minOrderAlert", { amount: formatCurrency(totals.amountNeededForMinOrder) })}</p>
-                    <p className="text-amber-800 font-normal mt-0.5">Minimum order value is ₹3,000 (after 90% discount).</p>
+                    {/* <p className="text-amber-800 font-normal mt-0.5">Minimum order value is ₹3,000 (after 90% discount).</p> */}
                   </div>
                 </div>
 
