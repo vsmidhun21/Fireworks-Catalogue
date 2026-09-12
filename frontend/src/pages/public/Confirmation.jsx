@@ -1,24 +1,103 @@
-import { useEffect } from "react";
-import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, MessageCircle, ShoppingBag, ClipboardCheck, PhoneCall, MessageSquare, Truck } from "lucide-react";
+import {
+  CheckCircle2,
+  MessageCircle,
+  ShoppingBag,
+  ClipboardCheck,
+  PhoneCall,
+  MessageSquare,
+  Truck,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
 import { useSettings } from "../../context/SettingsContext";
 import { whatsappLink } from "../../utils/format";
+import { EstimateService } from "../../services/api";
+import { EmptyState } from "../../components/common/States";
 
+// "checking": verifying the estimate exists (via the public lookup API); the
+// success screen right after submission skips this and starts at "ready".
+// "ready": confirmed to exist, safe to show.
+// "notFound": the backend genuinely returned 404 for this estimate number.
+// "error": a transient failure (network/server) — must NOT redirect the
+// customer away from a URL they may have bookmarked/shared/refreshed.
 export default function Confirmation() {
   const { estimateNumber } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { settings } = useSettings();
 
-  useEffect(() => {
-    if (!location.state?.fromOrderSubmission) {
-      navigate("/products", { replace: true });
-    }
-  }, [location.state, navigate]);
+  const cameFromSubmission = Boolean(location.state?.fromOrderSubmission);
+  const [status, setStatus] = useState(cameFromSubmission ? "ready" : "checking");
+  const [retryToken, setRetryToken] = useState(0);
 
-  if (!location.state?.fromOrderSubmission) return null;
+  useEffect(() => {
+    // Already know this estimate was just created successfully in this
+    // session — no need to round-trip to the server again.
+    if (cameFromSubmission) return;
+
+    let active = true;
+    setStatus("checking");
+
+    EstimateService.byNumber(estimateNumber)
+      .then(() => {
+        if (active) setStatus("ready");
+      })
+      .catch((err) => {
+        if (!active) return;
+        setStatus(err?.response?.status === 404 ? "notFound" : "error");
+      });
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estimateNumber, cameFromSubmission, retryToken]);
+
+  function retry() {
+    setRetryToken((n) => n + 1);
+  }
+
+  if (status === "checking") {
+    return (
+      <div className="container-page py-24 flex flex-col items-center justify-center text-brand-muted">
+        <Loader2 className="w-8 h-8 animate-spin mb-3" />
+        <p>{t("confirmation.checking")}</p>
+      </div>
+    );
+  }
+
+  if (status === "notFound") {
+    return (
+      <EmptyState
+        title={t("confirmation.notFoundTitle")}
+        description={t("confirmation.notFoundDesc")}
+        action={
+          <Link to="/products" className="btn-primary inline-flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4" />
+            <span>{t("estimate.browse")}</span>
+          </Link>
+        }
+      />
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <EmptyState
+        title={t("confirmation.loadFailedTitle")}
+        description={t("confirmation.loadFailedDesc")}
+        action={
+          <button onClick={retry} className="btn-primary inline-flex items-center gap-2">
+            <RotateCcw className="w-4 h-4" />
+            <span>{t("confirmation.retry")}</span>
+          </button>
+        }
+      />
+    );
+  }
 
   return (
     <div className="container-page py-16 sm:py-24 max-w-xl mx-auto text-center">

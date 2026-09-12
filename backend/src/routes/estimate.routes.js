@@ -119,17 +119,40 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
       items: preparedItems,
     });
 
-    // Send admin email notification (fail-safe: errors are logged, never abort response)
-    try {
-      await sendNewEstimateAdminEmail(created);
-    } catch (emailErr) {
-      console.error(
-        `[Email Service] Failed to send admin notification email for ${created.estimateNumber}:`,
-        emailErr.message || emailErr
-      );
-    }
-
+    // Respond to the customer immediately: the estimate is already safely
+    // committed to the database at this point, so there is nothing left
+    // that should make them wait. Sending the admin notification email is
+    // a side effect for the business, not something the customer's
+    // request should be held hostage to (SMTP round-trips can easily take
+    // several seconds, especially over Gmail SMTP).
     ok(res, created, "Estimate submitted successfully", 201);
+
+    // Fire-and-forget: send the admin email notification in the
+    // background, after the response has already been sent. Failures are
+    // logged only — they must never affect the customer-facing request,
+    // which has already completed successfully by this point.
+    (async () => {
+      const maxRetries = 3;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          await sendNewEstimateAdminEmail(created);
+          break; // Success, exit retry loop
+        } catch (emailErr) {
+          if (attempt === maxRetries) {
+            console.error(
+              `[Email Service] Failed to send admin notification email for ${created.estimateNumber} after ${maxRetries} attempts:`,
+              emailErr.message || emailErr
+            );
+          } else {
+            console.warn(
+              `[Email Service] Attempt ${attempt} failed to send admin notification email for ${created.estimateNumber}. Retrying in 2 seconds...`,
+              emailErr.message || emailErr
+            );
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          }
+        }
+      }
+    })();
   } catch (e) {
     next(e);
   }

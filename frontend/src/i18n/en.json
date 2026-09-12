@@ -343,7 +343,13 @@
     "step1": "Our team reviews your order",
     "step2": "We call or WhatsApp you within 24 hours",
     "step3": "We confirm price, stock and delivery date",
-    "step4": "We arrange delivery to your address"
+    "step4": "We arrange delivery to your address",
+    "checking": "Checking your estimate...",
+    "notFoundTitle": "We couldn't find that estimate",
+    "notFoundDesc": "This estimate may be invalid or no longer available.",
+    "loadFailedTitle": "Couldn't load your estimate",
+    "loadFailedDesc": "Please check your connection and try again.",
+    "retry": "Try Again"
   },
   "notFound": {
     "title": "Page not found",
