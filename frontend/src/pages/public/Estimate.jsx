@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEstimate } from "../../context/EstimateContext";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, discountPercent, effectivePrice } from "../../utils/format";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 
 export default function Estimate() {
@@ -32,15 +32,15 @@ export default function Estimate() {
 
   return (
     <div className="container-page py-8 sm:py-12 pb-28 sm:pb-12">
-      {/* Top Minimum Order & 90% Discount Alert Banner */}
+      {/* Top Minimum Order & Discount Alert Banner */}
       <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border border-amber-300/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-2.5">
           <span className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
-            90%
+            {totals.discountPercent}%
           </span>
           <div>
             <p className="font-display font-bold text-brand-navy text-sm sm:text-base">
-              Flat 90% Festive Discount Always Applicable!
+              {totals.discountPercent}% Festive Discount Applied on Your Order!
             </p>
             <p className="text-xs text-brand-muted">
               Minimum order required to place an order is <strong className="text-brand-navy">₹3,000</strong>.
@@ -77,7 +77,8 @@ export default function Estimate() {
         <div className="lg:col-span-2 space-y-3">
           {items.map((item) => {
             const name = i18n.language === "ta" && item.nameTa ? item.nameTa : item.nameEn;
-            const unitPrice = item.discountedPrice != null ? item.discountedPrice : Math.round(item.originalPrice * 0.10);
+            const unitPrice = effectivePrice(item);
+            const itemPct = discountPercent(item.originalPrice, unitPrice);
             return (
               <div key={item.productId} className="card-surface grid grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 p-3 rounded-xl border border-brand-border/80 shadow-sm sm:flex sm:gap-4 sm:p-4">
                 <div className="row-span-2 w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden border border-brand-border/50 sm:row-span-1">
@@ -97,9 +98,11 @@ export default function Estimate() {
                       {item.originalPrice > unitPrice && (
                         <span className="text-slate-400 line-through text-[11px]">{formatCurrency(item.originalPrice)}</span>
                       )}
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                        -90%
-                      </span>
+                      {itemPct > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          -{itemPct}%
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -155,7 +158,7 @@ export default function Estimate() {
             <h2 className="font-display font-semibold text-lg text-brand-navy">{t("estimate.estimatedTotal")}</h2>
             <span className="bg-emerald-100 text-emerald-800 text-xs font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-200">
               <Sparkles className="w-3 h-3 text-emerald-600" />
-              <span>90% OFF</span>
+              <span>{totals.discountPercent}% OFF</span>
             </span>
           </div>
 
@@ -165,7 +168,7 @@ export default function Estimate() {
           </div>
 
           <div className="flex justify-between text-sm text-emerald-600 mb-2 font-semibold">
-            <span>{t("estimate.discount90")}</span>
+            <span>{t("estimate.discount90", { pct: totals.discountPercent })}</span>
             <span>-{formatCurrency(totals.discount)}</span>
           </div>
 
@@ -192,7 +195,7 @@ export default function Estimate() {
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold">{t("estimate.minOrderAlert", { amount: formatCurrency(totals.amountNeededForMinOrder) })}</p>
-                    <p className="text-amber-800 font-normal mt-0.5">Minimum order value is ₹3,000 (after 90% discount).</p>
+                    <p className="text-amber-800 font-normal mt-0.5">Minimum order value is ₹3,000 (after discount).</p>
                   </div>
                 </div>
 

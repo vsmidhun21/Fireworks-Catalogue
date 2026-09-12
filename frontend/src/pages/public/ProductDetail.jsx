@@ -107,10 +107,12 @@ export default function ProductDetail() {
           </p>
 
           {/* Festive Discount & Min Order Callout */}
-          <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
-            <span className="font-semibold">🔥 Flat 90% Discount Always Applicable</span>
-            <span className="font-bold text-brand-navy">Min. Order: ₹3,000</span>
-          </div>
+          {pct > 0 && (
+            <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
+              <span className="font-semibold">🔥 Flat {pct}% Discount Applicable on This Product</span>
+              <span className="font-bold text-brand-navy">Min. Order: ₹3,000</span>
+            </div>
+          )}
 
           {description && (
             <div className="mt-5">

@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
+import { catalogueDiscountSummary } from "../../utils/format";
 
 const SKELETON_COUNT = 10;
 
@@ -14,6 +15,8 @@ export default function Products() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const discountSummary = catalogueDiscountSummary(products);
 
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
@@ -51,18 +54,20 @@ export default function Products() {
         </div>
       </div>
 
-      {/* 90% Offer & Minimum Order Banner */}
+      {/* Offer & Minimum Order Banner */}
       <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border border-amber-300/80 flex items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
-            90%
+            {discountSummary.pct}%
           </div>
           <div>
             <p className="font-display font-bold text-brand-navy text-sm sm:text-base">
               {t("home.catalogueNotice")}
             </p>
             <p className="text-xs text-brand-muted">
-              Select crackers directly at Sivakasi factory rates · 90% discount is applied automatically in your order summary.
+              Select crackers directly at Sivakasi factory rates ·{" "}
+              {discountSummary.uniform ? `Flat ${discountSummary.pct}%` : `Up to ${discountSummary.pct}%`} discount is
+              applied automatically in your order summary.
             </p>
           </div>
         </div>

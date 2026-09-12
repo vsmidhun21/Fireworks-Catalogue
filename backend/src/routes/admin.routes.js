@@ -38,8 +38,14 @@ function parseNullableNumber(value) {
 }
 
 function getUploadedImageUrl(req) {
-  // console.log("req.file:", req.file);
-  return req.file ? `${req.protocol}://${req.get('host')}/uploads/products/${req.file.filename}` : undefined;
+  // Store a relative path only (consistent with categories, gift boxes,
+  // promotions, branding and the standalone /upload endpoint). Baking in
+  // req.protocol/req.get('host') is unsafe behind a reverse proxy (it can
+  // record "http" for an https site) and hardcodes the current host into
+  // the DB, breaking images if the domain/port ever changes. The frontend's
+  // utils/image.js already resolves "/uploads/..." paths against the
+  // current API base URL at render time.
+  return req.file ? `/uploads/products/${req.file.filename}` : undefined;
 }
 
 // ---------- Uploads ----------

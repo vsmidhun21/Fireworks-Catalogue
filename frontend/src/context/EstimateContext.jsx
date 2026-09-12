@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { totalsDiscountPercent } from "../utils/format";
 
 const EstimateContext = createContext(null);
 const STORAGE_KEY = "rr_estimate_items";
@@ -64,6 +65,10 @@ export function EstimateProvider({ children }) {
       0
     );
     const discount = subtotal - estimatedTotal;
+    // Blended discount % actually reflected by the cart, rather than an
+    // assumed constant — accurate even if some items carry a custom
+    // (non-default) discountedPrice.
+    const discountPercent = totalsDiscountPercent(subtotal, discount);
     const isMinOrderMet = estimatedTotal >= MIN_ORDER_AMOUNT;
     const amountNeededForMinOrder = Math.max(0, MIN_ORDER_AMOUNT - estimatedTotal);
 
@@ -71,6 +76,7 @@ export function EstimateProvider({ children }) {
       subtotal,
       estimatedTotal,
       discount,
+      discountPercent,
       count: items.reduce((s, i) => s + i.quantity, 0),
       minOrderAmount: MIN_ORDER_AMOUNT,
       isMinOrderMet,

@@ -5,6 +5,7 @@ import { Search, ShoppingBag } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
+import { catalogueDiscountSummary } from "../../utils/format";
 
 const SKELETON_COUNT = 10;
 const EXPLORE_MORE_LIMIT = 8;
@@ -75,6 +76,8 @@ export default function CategoryPage() {
     );
   }
 
+  const discountSummary = catalogueDiscountSummary(products);
+
   return (
     <div className="container-page py-8 sm:py-12">
       {category && (
@@ -89,10 +92,12 @@ export default function CategoryPage() {
             return description && <p className="text-brand-muted mt-2 max-w-2xl">{description}</p>;
           })()}
 
-          {/* 90% Offer Banner */}
+          {/* Offer Banner */}
           <div className="mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-300/80 flex items-center justify-between gap-3 text-xs sm:text-sm">
             <span className="font-semibold text-brand-navy">
-              🎉 Flat 90% Discount Always Applicable on All Products!
+              🎉 {discountSummary.uniform
+                ? `Flat ${discountSummary.pct}% Discount Always Applicable on All Products!`
+                : `Up to ${discountSummary.pct}% Discount Applicable on Products in This Category!`}
             </span>
             <span className="font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full shrink-0">
               Min. Order ₹3,000

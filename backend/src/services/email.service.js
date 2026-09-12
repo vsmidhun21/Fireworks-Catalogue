@@ -32,6 +32,19 @@ function formatCurrency(val) {
   return "₹" + num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
+/**
+ * Computes the actual blended discount % represented by an estimate's
+ * subtotal/totalDiscount, instead of assuming a constant 90%. Individual
+ * products can carry a custom discountedPrice, so the real percentage can
+ * differ from the site-wide default.
+ */
+function computeDiscountPercent(subtotal, totalDiscount) {
+  const sub = Number(subtotal) || 0;
+  const disc = Number(totalDiscount) || 0;
+  if (sub <= 0 || disc <= 0) return 0;
+  return Math.round((disc / sub) * 100);
+}
+
 /** Formats an ISO date string into Indian Standard Time (IST). */
 function formatDate(isoDate) {
   if (!isoDate) return "N/A";
@@ -70,6 +83,7 @@ function escapeHtml(str) {
 export function generateEstimateAdminEmailHtml(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
+  const discountPct = computeDiscountPercent(estimate.subtotal, estimate.totalDiscount);
   const siteUrl = process.env.PUBLIC_SITE_URL || (process.env.CORS_ORIGINS || "http://localhost:5173").split(",")[0].trim();
   const adminEstimateUrl = estimate.id ? `${siteUrl}/admin/estimates/${estimate.id}` : null;
 
@@ -251,7 +265,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
                       </tr>
                       ${estimate.totalDiscount > 0 ? `
                       <tr>
-                        <td style="padding: 4px 0; font-size: 13px; color: #16A34A;">Festive Discount (90%):</td>
+                        <td style="padding: 4px 0; font-size: 13px; color: #16A34A;">Festive Discount (${discountPct}%):</td>
                         <td style="padding: 4px 0; font-size: 13px; color: #16A34A; text-align: right; font-weight: 700;">- ${formatCurrency(estimate.totalDiscount)}</td>
                       </tr>` : ""}
                       <tr style="border-top: 1px solid #CBD5E1;">
@@ -260,7 +274,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
                       </tr>
                       <tr>
                         <td colspan="2" style="padding-top: 6px; font-size: 11px; color: #059669; text-align: right; font-weight: 600;">
-                          ✓ Flat 90% discount applied · Min. order ₹3,000 satisfied
+                          ✓ ${discountPct}% discount applied · Min. order ₹3,000 satisfied
                         </td>
                       </tr>
                     </table>
@@ -320,6 +334,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
 export function generateEstimateAdminEmailText(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
+  const discountPct = computeDiscountPercent(estimate.subtotal, estimate.totalDiscount);
 
   const lines = [
     "===========================================================",
@@ -364,7 +379,7 @@ export function generateEstimateAdminEmailText(estimate) {
     "FINANCIAL SUMMARY",
     "-----------------------------------------------------------",
     `Subtotal (MRP)  : ${formatCurrency(estimate.subtotal)}`,
-    `Discount (90%)  : -${formatCurrency(estimate.totalDiscount)}`,
+    `Discount (${discountPct}%)  : -${formatCurrency(estimate.totalDiscount)}`,
     `Estimated Total : ${formatCurrency(estimate.estimatedTotal)}`,
     `Status          : Minimum order requirement (₹3,000) satisfied`,
     "",

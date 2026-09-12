@@ -100,7 +100,7 @@ export default function CustomerDetails() {
       {/* Order Summary Strip */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-6 flex items-center justify-between gap-3 text-emerald-900 text-xs sm:text-sm shadow-sm">
         <div>
-          <span className="font-bold text-emerald-800">Flat 90% Discount Applied</span>
+          <span className="font-bold text-emerald-800">{totals.discountPercent}% Discount Applied</span>
           <span className="text-emerald-700 hidden sm:inline"> · Min. order ₹3,000 requirement satisfied</span>
         </div>
         <div className="font-extrabold text-emerald-900 text-sm sm:text-base shrink-0">

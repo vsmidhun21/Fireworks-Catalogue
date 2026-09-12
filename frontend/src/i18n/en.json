@@ -136,7 +136,7 @@
     "itemsInOrder": "{{count}} item(s) in your order",
     "subtotalItems": "Subtotal (MRP)",
     "youSave": "You Save (90%)",
-    "discount90": "Festive Discount (90%)",
+    "discount90": "Festive Discount ({{pct}}%)",
     "minOrderNotice": "Minimum order value is ₹3,000. Flat 90% discount is always applied.",
     "minOrderAlert": "Minimum order price is ₹3,000 to place an order. Add {{amount}} more to proceed.",
     "minOrderMet": "Minimum order requirement of ₹3,000 met!",
