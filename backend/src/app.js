@@ -20,6 +20,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -27,7 +29,7 @@ app.use(
 );
 app.use(
   cors({
-    origin: (process.env.CORS_ORIGINS || "http://localhost:5173").split(","),
+    origin: (process.env.CORS_ORIGINS || "http://localhost:5173" || "https://srirrcrackers.com").split(","),
     credentials: true,
   })
 );
