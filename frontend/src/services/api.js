@@ -53,6 +53,10 @@ export const CategoryService = {
 export const ProductService = {
   list: (params) => api.get("/products", { params }),
   featured: () => api.get("/products/featured"),
+  // Dedicated endpoint for the default "browse by category" view on the
+  // /products page. Separate from `list` above so pages/filters relying on
+  // that endpoint are unaffected.
+  groupedByCategory: () => api.get("/products/grouped-by-category"),
   bySlug: (slug) => api.get(`/products/${slug}`),
 };
 

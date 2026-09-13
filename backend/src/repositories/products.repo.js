@@ -220,4 +220,44 @@ export const ProductRepo = {
     const row = await db.prepare("SELECT COUNT(*) as c FROM products WHERE is_featured = 1").get();
     return Number(row?.c || 0);
   },
+  // Dedicated read for the customer catalogue's "browse by category" view.
+  // Returns active categories (in their configured display order) each with
+  // their active products in creation order (i.e. first product added to
+  // that category appears first). Categories with no active products are
+  // omitted so the page never renders an empty section.
+  // This is intentionally separate from `list()` above so the existing
+  // /api/v1/products endpoint (used by the filter dropdown, search, sort,
+  // and other pages) is never touched.
+  async groupedByCategory({ activeOnly = true } = {}) {
+    const categoryRows = await db
+      .prepare(
+        activeOnly
+          ? "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC, id ASC"
+          : "SELECT * FROM categories ORDER BY sort_order ASC, id ASC"
+      )
+      .all();
+
+    const groups = [];
+    for (const catRow of categoryRows) {
+      const category = {
+        id: catRow.id,
+        nameEn: catRow.name_en,
+        nameTa: catRow.name_ta,
+        slug: catRow.slug,
+        descriptionEn: catRow.description_en,
+        descriptionTa: catRow.description_ta,
+        imageUrl: catRow.image_url,
+        sortOrder: catRow.sort_order,
+        isActive: !!catRow.is_active,
+      };
+      const productSql = activeOnly
+        ? "SELECT * FROM products WHERE category_id = ? AND is_active = 1 ORDER BY id ASC"
+        : "SELECT * FROM products WHERE category_id = ? ORDER BY id ASC";
+      const productRows = await db.prepare(productSql).all(catRow.id);
+      if (!productRows.length) continue;
+      const products = productRows.map(rowToProduct).map((p) => ({ ...p, category }));
+      groups.push({ category, products });
+    }
+    return groups;
+  },
 };

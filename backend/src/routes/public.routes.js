@@ -73,6 +73,18 @@ router.get("/products/featured", async (req, res, next) => {
   }
 });
 
+// New, dedicated endpoint for the customer /products page's default
+// "browse by category" view. Kept separate from GET /products above so
+// that endpoint (used elsewhere for filtering/search/sort) is untouched.
+router.get("/products/grouped-by-category", async (req, res, next) => {
+  try {
+    const groups = await ProductRepo.groupedByCategory({ activeOnly: true });
+    ok(res, { groups });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/products/:slug", async (req, res, next) => {
   try {
     const product = await ProductRepo.findBySlug(req.params.slug, { activeOnly: true });

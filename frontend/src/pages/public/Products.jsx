@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
@@ -11,17 +11,34 @@ const SKELETON_COUNT = 10;
 
 export default function Products() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const discountSummary = catalogueDiscountSummary(products);
+  // Flat, filtered list — used whenever the customer has search/category/
+  // sort/featured active (existing behaviour, untouched).
+  const [products, setProducts] = useState([]);
+  // Grouped-by-category list — used for the default view (no filters
+  // active), so products are shown one category at a time, in the order
+  // each category's products were first added.
+  const [groups, setGroups] = useState([]);
+
+  const [loading, setLoading] = useState(true);
 
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "";
   const featured = searchParams.get("featured") || "";
   const sort = searchParams.get("sort") || "";
+
+  // Any active filter drops us into the flat, filtered view. With nothing
+  // selected, the page defaults to the grouped-by-category browsing view.
+  const hasActiveFilters = Boolean(search || category || featured || sort);
+
+  const allVisibleProducts = useMemo(
+    () => (hasActiveFilters ? products : groups.flatMap((g) => g.products)),
+    [hasActiveFilters, products, groups]
+  );
+  const discountSummary = catalogueDiscountSummary(allVisibleProducts);
 
   useEffect(() => {
     CategoryService.list().then((res) => setCategories(res.data));
@@ -29,14 +46,19 @@ export default function Products() {
 
   useEffect(() => {
     setLoading(true);
-    // No page/limit is sent: the customer catalogue returns all active
-    // products in a single, unpaginated response.
-    ProductService.list({ search, category, featured, sort })
-      .then((res) => {
-        setProducts(res.data.items);
-      })
-      .finally(() => setLoading(false));
-  }, [search, category, featured, sort]);
+
+    if (hasActiveFilters) {
+      // No page/limit is sent: the customer catalogue returns all active
+      // products in a single, unpaginated response.
+      ProductService.list({ search, category, featured, sort })
+        .then((res) => setProducts(res.data.items))
+        .finally(() => setLoading(false));
+    } else {
+      ProductService.groupedByCategory()
+        .then((res) => setGroups(res.data.groups))
+        .finally(() => setLoading(false));
+    }
+  }, [hasActiveFilters, search, category, featured, sort]);
 
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams);
@@ -116,14 +138,57 @@ export default function Products() {
 
       {loading ? (
         <LoadingGrid count={SKELETON_COUNT} />
-      ) : products.length === 0 ? (
+      ) : hasActiveFilters ? (
+        products.length === 0 ? (
+          <EmptyState title={t("product.noResults")} />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )
+      ) : groups.length === 0 ? (
         <EmptyState title={t("product.noResults")} />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        <>
+          {/* Quick jump to a category, so customers can pick a section directly */}
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
+            {groups.map(({ category: c }) => (
+              <a
+                key={c.id}
+                href={`#category-${c.slug}`}
+                className="shrink-0 rounded-full border border-brand-border bg-white px-4 py-1.5 text-xs font-semibold text-brand-navy hover:border-brand-primary hover:text-brand-primary transition-colors"
+              >
+                {i18n.language === "ta" && c.nameTa ? c.nameTa : c.nameEn}
+              </a>
+            ))}
+          </div>
+
+          <div className="space-y-10">
+            {groups.map(({ category: c, products: catProducts }) => (
+              <section key={c.id} id={`category-${c.slug}`} className="scroll-mt-24">
+                <div className="flex items-baseline justify-between gap-3 mb-4">
+                  <h2 className="font-display text-xl sm:text-2xl font-bold text-brand-navy">
+                    {i18n.language === "ta" && c.nameTa ? c.nameTa : c.nameEn}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/category/${c.slug}`)}
+                    className="shrink-0 text-xs sm:text-sm font-semibold text-brand-primary hover:text-brand-primary-dark"
+                  >
+                    {t("product.exploreMore")}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                  {catProducts.map((p) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
