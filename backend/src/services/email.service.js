@@ -32,19 +32,6 @@ function formatCurrency(val) {
   return "₹" + num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 }
 
-/**
- * Computes the actual blended discount % represented by an estimate's
- * subtotal/totalDiscount, instead of assuming a constant 90%. Individual
- * products can carry a custom discountedPrice, so the real percentage can
- * differ from the site-wide default.
- */
-function computeDiscountPercent(subtotal, totalDiscount) {
-  const sub = Number(subtotal) || 0;
-  const disc = Number(totalDiscount) || 0;
-  if (sub <= 0 || disc <= 0) return 0;
-  return Math.round((disc / sub) * 100);
-}
-
 /** Formats an ISO date string into Indian Standard Time (IST). */
 function formatDate(isoDate) {
   if (!isoDate) return "N/A";
@@ -83,7 +70,7 @@ function escapeHtml(str) {
 export function generateEstimateAdminEmailHtml(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
-  const discountPct = computeDiscountPercent(estimate.subtotal, estimate.totalDiscount);
+  const discountPct = 90;
   const siteUrl = process.env.PUBLIC_SITE_URL || (process.env.CORS_ORIGINS || "http://localhost:5173").split(",")[0].trim();
   const adminEstimateUrl = estimate.id ? `${siteUrl}/admin/estimates/${estimate.id}` : null;
 
@@ -334,7 +321,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
 export function generateEstimateAdminEmailText(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
-  const discountPct = computeDiscountPercent(estimate.subtotal, estimate.totalDiscount);
+  const discountPct = 90;
 
   const lines = [
     "===========================================================",
