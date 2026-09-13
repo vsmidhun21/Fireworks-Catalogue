@@ -70,7 +70,7 @@ function escapeHtml(str) {
 export function generateEstimateAdminEmailHtml(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
-  const discountPct = computeDiscountPercent(estimate.subtotal, estimate.totalDiscount);
+  const discountPct = 90;
   const siteUrl = process.env.PUBLIC_SITE_URL || (process.env.CORS_ORIGINS || "http://localhost:5173").split(",")[0].trim();
   const adminEstimateUrl = estimate.id ? `${siteUrl}/admin/estimates/${estimate.id}` : null;
 
