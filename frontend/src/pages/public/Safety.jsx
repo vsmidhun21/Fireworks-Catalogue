@@ -14,9 +14,9 @@ export default function Safety() {
         <li>{t("safety.point5")}</li>
         <li>{t("safety.point6")}</li>
       </ul>
-      <p className="text-xs text-brand-muted mt-8">
+      {/* <p className="text-xs text-brand-muted mt-8">
         {t("safety.disclaimer")}
-      </p>
+      </p> */}
     </div>
   );
 }
