@@ -17,36 +17,38 @@ function rowToPromotion(r) {
 }
 
 export const PromotionRepo = {
-  list({ activeOnly = false, limit = 10, offset = 0 } = {}) {
+  async list({ activeOnly = false, limit = 10, offset = 0 } = {}) {
     const where = activeOnly ? "WHERE is_active = 1" : "";
-    const total = db.prepare(`SELECT COUNT(*) as c FROM promotions ${where}`).get().c;
-    const rows = db
+    const totalRow = await db.prepare(`SELECT COUNT(*) as c FROM promotions ${where}`).get();
+    const total = Number(totalRow?.c || 0);
+    const rows = await db
       .prepare(
         `SELECT * FROM promotions ${where}
          ORDER BY sort_order ASC, created_at DESC
          LIMIT ? OFFSET ?`
       )
-      .all(limit, offset);
+      .all(Number(limit), Number(offset));
     return { items: rows.map(rowToPromotion), total };
   },
-  findById(id) {
-    return rowToPromotion(db.prepare("SELECT * FROM promotions WHERE id = ?").get(id));
+  async findById(id) {
+    const row = await db.prepare("SELECT * FROM promotions WHERE id = ?").get(id);
+    return rowToPromotion(row);
   },
-  create({ title, subtitle, imageUrl, ctaLabel, ctaUrl, sortOrder = 0, isActive = true }) {
-    const info = db
+  async create({ title, subtitle, imageUrl, ctaLabel, ctaUrl, sortOrder = 0, isActive = true }) {
+    const info = await db
       .prepare(
         `INSERT INTO promotions
          (title, subtitle, image_url, cta_label, cta_url, sort_order, is_active, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(title, subtitle || null, imageUrl, ctaLabel || null, ctaUrl || null, sortOrder, isActive ? 1 : 0, nowIso());
-    return PromotionRepo.findById(Number(info.lastInsertRowid));
+    return await PromotionRepo.findById(Number(info.lastInsertRowid));
   },
-  update(id, fields) {
-    const current = PromotionRepo.findById(id);
+  async update(id, fields) {
+    const current = await PromotionRepo.findById(id);
     if (!current) return null;
     const merged = { ...current, ...fields };
-    db.prepare(
+    await db.prepare(
       `UPDATE promotions
        SET title = ?, subtitle = ?, image_url = ?, cta_label = ?, cta_url = ?, sort_order = ?, is_active = ?, updated_at = ?
        WHERE id = ?`
@@ -61,13 +63,13 @@ export const PromotionRepo = {
       nowIso(),
       id
     );
-    return PromotionRepo.findById(id);
+    return await PromotionRepo.findById(id);
   },
-  setActive(id, isActive) {
-    db.prepare("UPDATE promotions SET is_active = ?, updated_at = ? WHERE id = ?").run(isActive ? 1 : 0, nowIso(), id);
-    return PromotionRepo.findById(id);
+  async setActive(id, isActive) {
+    await db.prepare("UPDATE promotions SET is_active = ?, updated_at = ? WHERE id = ?").run(isActive ? 1 : 0, nowIso(), id);
+    return await PromotionRepo.findById(id);
   },
-  delete(id) {
-    db.prepare("DELETE FROM promotions WHERE id = ?").run(id);
+  async delete(id) {
+    await db.prepare("DELETE FROM promotions WHERE id = ?").run(id);
   },
 };

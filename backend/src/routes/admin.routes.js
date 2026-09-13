@@ -40,13 +40,6 @@ function parseNullableNumber(value) {
 }
 
 function getUploadedImageUrl(req) {
-  // Store a relative path only (consistent with categories, gift boxes,
-  // promotions, branding and the standalone /upload endpoint). Baking in
-  // req.protocol/req.get('host') is unsafe behind a reverse proxy (it can
-  // record "http" for an https site) and hardcodes the current host into
-  // the DB, breaking images if the domain/port ever changes. The frontend's
-  // utils/image.js already resolves "/uploads/..." paths against the
-  // current API base URL at render time.
   return req.file ? `/uploads/products/${req.file.filename}` : undefined;
 }
 
@@ -74,16 +67,27 @@ router.post("/upload", uploadProductImage.single("image"), (req, res, next) => {
 });
 
 // ---------- Dashboard ----------
-router.get("/dashboard", (req, res, next) => {
+router.get("/dashboard", async (req, res, next) => {
   try {
+    const [totalProducts, featuredProducts, totalCategories, newEstimates, pendingEstimates, completedEstimates, recentEstimates] =
+      await Promise.all([
+        ProductRepo.count(),
+        ProductRepo.countFeatured(),
+        CategoryRepo.count(),
+        EstimateRepo.countByStatus(["NEW"]),
+        EstimateRepo.countByStatus(["NEW", "CONTACTED"]),
+        EstimateRepo.countByStatus(["COMPLETED"]),
+        EstimateRepo.recent(8),
+      ]);
+
     ok(res, {
-      totalProducts: ProductRepo.count(),
-      featuredProducts: ProductRepo.countFeatured(),
-      totalCategories: CategoryRepo.count(),
-      newEstimates: EstimateRepo.countByStatus(["NEW"]),
-      pendingEstimates: EstimateRepo.countByStatus(["NEW", "CONTACTED"]),
-      completedEstimates: EstimateRepo.countByStatus(["COMPLETED"]),
-      recentEstimates: EstimateRepo.recent(8).map((e) => ({
+      totalProducts,
+      featuredProducts,
+      totalCategories,
+      newEstimates,
+      pendingEstimates,
+      completedEstimates,
+      recentEstimates: recentEstimates.map((e) => ({
         id: e.id,
         estimateNumber: e.estimateNumber,
         customerName: e.customer?.name,
@@ -98,12 +102,12 @@ router.get("/dashboard", (req, res, next) => {
 });
 
 // ---------- Categories ----------
-router.get("/categories", (req, res, next) => {
+router.get("/categories", async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    const { items, total } = CategoryRepo.list({
+    const { items, total } = await CategoryRepo.list({
       limit: take,
       offset: (currentPage - 1) * take,
     });
@@ -113,11 +117,11 @@ router.get("/categories", (req, res, next) => {
   }
 });
 
-router.post("/categories", uploadCategoryImage.single("image"), (req, res, next) => {
+router.post("/categories", uploadCategoryImage.single("image"), async (req, res, next) => {
   try {
     const { nameEn, nameTa, descriptionEn, descriptionTa, imageUrl, sortOrder } = req.body;
     if (!nameEn) return fail(res, "English name is required", 422);
-    const category = CategoryRepo.create({
+    const category = await CategoryRepo.create({
       nameEn,
       nameTa,
       descriptionEn,
@@ -132,10 +136,10 @@ router.post("/categories", uploadCategoryImage.single("image"), (req, res, next)
   }
 });
 
-router.put("/categories/:id", uploadCategoryImage.single("image"), (req, res, next) => {
+router.put("/categories/:id", uploadCategoryImage.single("image"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const existing = CategoryRepo.findById(id);
+    const existing = await CategoryRepo.findById(id);
     if (!existing) return fail(res, "Category not found", 404);
     const b = req.body;
     const fields = { ...b };
@@ -143,12 +147,10 @@ router.put("/categories/:id", uploadCategoryImage.single("image"), (req, res, ne
     if (req.file) {
       fields.imageUrl = `/uploads/categories/${req.file.filename}`;
     } else if (b.imageUrl !== undefined) {
-      // Empty string means "remove the existing image" (falls back to placeholder on the frontend).
       fields.imageUrl = parseNullableText(b.imageUrl);
     }
-    const category = CategoryRepo.update(id, fields);
+    const category = await CategoryRepo.update(id, fields);
     if (!category) return fail(res, "Category not found", 404);
-    // Clean up the old file on disk whenever the image was replaced/removed.
     cleanupReplacedImage(existing.imageUrl, category.imageUrl);
     ok(res, category, "Category updated");
   } catch (e) {
@@ -156,28 +158,26 @@ router.put("/categories/:id", uploadCategoryImage.single("image"), (req, res, ne
   }
 });
 
-router.patch("/categories/:id/status", (req, res, next) => {
+router.patch("/categories/:id/status", async (req, res, next) => {
   try {
-    const category = CategoryRepo.setActive(Number(req.params.id), !!req.body.isActive);
+    const category = await CategoryRepo.setActive(Number(req.params.id), !!req.body.isActive);
     ok(res, category, "Category status updated");
   } catch (e) {
     next(e);
   }
 });
 
-router.delete("/categories/:id", (req, res, next) => {
+router.delete("/categories/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const category = CategoryRepo.findById(id);
+    const category = await CategoryRepo.findById(id);
     if (!category) return fail(res, "Category not found", 404);
-    const inUse = CategoryRepo.countProductsInCategory(id);
+    const inUse = await CategoryRepo.countProductsInCategory(id);
     if (inUse > 0) {
-      CategoryRepo.setActive(id, false);
+      await CategoryRepo.setActive(id, false);
       return ok(res, null, "Category has products; archived instead of deleted");
     }
-    CategoryRepo.delete(id);
-    // Only remove the image file on an actual hard delete — an archived
-    // category is still shown/edited in admin and must keep its image.
+    await CategoryRepo.delete(id);
     deleteUploadedFile(category.imageUrl);
     ok(res, null, "Category deleted");
   } catch (e) {
@@ -186,17 +186,17 @@ router.delete("/categories/:id", (req, res, next) => {
 });
 
 // ---------- Products ----------
-router.get("/products", (req, res, next) => {
+router.get("/products", async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search, category } = req.query;
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     let categorySlug;
     if (category) {
-      const cat = CategoryRepo.findById(Number(category));
+      const cat = await CategoryRepo.findById(Number(category));
       categorySlug = cat?.slug;
     }
-    const { items, total } = ProductRepo.list({
+    const { items, total } = await ProductRepo.list({
       activeOnly: false,
       categorySlug,
       search,
@@ -209,9 +209,9 @@ router.get("/products", (req, res, next) => {
   }
 });
 
-router.get("/products/:id", (req, res, next) => {
+router.get("/products/:id", async (req, res, next) => {
   try {
-    const product = ProductRepo.findById(Number(req.params.id), { withCat: true });
+    const product = await ProductRepo.findById(Number(req.params.id), { withCat: true });
     if (!product) return fail(res, "Product not found", 404);
     ok(res, product);
   } catch (e) {
@@ -219,14 +219,14 @@ router.get("/products/:id", (req, res, next) => {
   }
 });
 
-router.post("/products", uploadProductImage.single("image"), (req, res, next) => {
+router.post("/products", uploadProductImage.single("image"), async (req, res, next) => {
   try {
     const b = req.body;
     if (!b.nameEn || !b.categoryId || b.originalPrice == null || b.originalPrice === "") {
       return fail(res, "nameEn, categoryId and originalPrice are required", 422);
     }
-    const productCode = ProductRepo.nextProductCode();
-    const product = ProductRepo.create({
+    const productCode = await ProductRepo.nextProductCode();
+    const product = await ProductRepo.create({
       categoryId: Number(b.categoryId),
       productCode,
       nameEn: b.nameEn,
@@ -249,10 +249,10 @@ router.post("/products", uploadProductImage.single("image"), (req, res, next) =>
   }
 });
 
-router.put("/products/:id", uploadProductImage.single("image"), (req, res, next) => {
+router.put("/products/:id", uploadProductImage.single("image"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const existing = ProductRepo.findById(id);
+    const existing = await ProductRepo.findById(id);
     if (!existing) return fail(res, "Product not found", 404);
     const b = req.body;
     const fields = {};
@@ -272,9 +272,8 @@ router.put("/products/:id", uploadProductImage.single("image"), (req, res, next)
     if (b.isNewArrival !== undefined) fields.isNewArrival = parseBoolean(b.isNewArrival);
     if (b.sortOrder != null) fields.sortOrder = Number(b.sortOrder);
 
-    const product = ProductRepo.update(id, fields);
+    const product = await ProductRepo.update(id, fields);
     if (!product) return fail(res, "Product not found", 404);
-    // Clean up the old file on disk whenever the image was replaced.
     cleanupReplacedImage(existing.imageUrl, product.imageUrl);
     ok(res, product, "Product updated");
   } catch (e) {
@@ -283,35 +282,33 @@ router.put("/products/:id", uploadProductImage.single("image"), (req, res, next)
   }
 });
 
-router.patch("/products/:id/status", (req, res, next) => {
+router.patch("/products/:id/status", async (req, res, next) => {
   try {
-    ok(res, ProductRepo.setActive(Number(req.params.id), !!req.body.isActive), "Product status updated");
+    ok(res, await ProductRepo.setActive(Number(req.params.id), !!req.body.isActive), "Product status updated");
   } catch (e) {
     next(e);
   }
 });
 
-router.patch("/products/:id/featured", (req, res, next) => {
+router.patch("/products/:id/featured", async (req, res, next) => {
   try {
-    ok(res, ProductRepo.setFeatured(Number(req.params.id), !!req.body.isFeatured), "Featured status updated");
+    ok(res, await ProductRepo.setFeatured(Number(req.params.id), !!req.body.isFeatured), "Featured status updated");
   } catch (e) {
     next(e);
   }
 });
 
-router.delete("/products/:id", (req, res, next) => {
+router.delete("/products/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const product = ProductRepo.findById(id);
+    const product = await ProductRepo.findById(id);
     if (!product) return fail(res, "Product not found", 404);
-    const usedInEstimates = ProductRepo.usedInEstimates(id);
+    const usedInEstimates = await ProductRepo.usedInEstimates(id);
     if (usedInEstimates > 0) {
-      ProductRepo.setActive(id, false);
+      await ProductRepo.setActive(id, false);
       return ok(res, null, "Product used in past estimates; archived instead of deleted");
     }
-    ProductRepo.delete(id);
-    // Only remove the image file on an actual hard delete — an archived
-    // product is still shown/edited in admin and must keep its image.
+    await ProductRepo.delete(id);
     deleteUploadedFile(product.imageUrl);
     ok(res, null, "Product deleted");
   } catch (e) {
@@ -320,21 +317,21 @@ router.delete("/products/:id", (req, res, next) => {
 });
 
 // ---------- Estimates ----------
-router.get("/estimates", (req, res, next) => {
+router.get("/estimates", async (req, res, next) => {
   try {
     const { status, search, page = 1, limit = 10 } = req.query;
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    const { items, total } = EstimateRepo.list({ status, search, limit: take, offset: (currentPage - 1) * take });
+    const { items, total } = await EstimateRepo.list({ status, search, limit: take, offset: (currentPage - 1) * take });
     ok(res, { items, total, page: currentPage, limit: take });
   } catch (e) {
     next(e);
   }
 });
 
-router.get("/estimates/:id", (req, res, next) => {
+router.get("/estimates/:id", async (req, res, next) => {
   try {
-    const estimate = EstimateRepo.findByIdWithDetails(Number(req.params.id));
+    const estimate = await EstimateRepo.findByIdWithDetails(Number(req.params.id));
     if (!estimate) return fail(res, "Estimate not found", 404);
     ok(res, estimate);
   } catch (e) {
@@ -342,31 +339,31 @@ router.get("/estimates/:id", (req, res, next) => {
   }
 });
 
-router.patch("/estimates/:id/status", (req, res, next) => {
+router.patch("/estimates/:id/status", async (req, res, next) => {
   try {
     const allowed = ["NEW", "CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
     if (!allowed.includes(req.body.status)) return fail(res, "Invalid status", 422);
-    ok(res, EstimateRepo.setStatus(Number(req.params.id), req.body.status), "Estimate status updated");
+    ok(res, await EstimateRepo.setStatus(Number(req.params.id), req.body.status), "Estimate status updated");
   } catch (e) {
     next(e);
   }
 });
 
-router.patch("/estimates/:id/notes", (req, res, next) => {
+router.patch("/estimates/:id/notes", async (req, res, next) => {
   try {
-    ok(res, EstimateRepo.setAdminNotes(Number(req.params.id), req.body.adminNotes || ""), "Notes updated");
+    ok(res, await EstimateRepo.setAdminNotes(Number(req.params.id), req.body.adminNotes || ""), "Notes updated");
   } catch (e) {
     next(e);
   }
 });
 
 // ---------- Customers ----------
-router.get("/customers", (req, res, next) => {
+router.get("/customers", async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    const { items, total } = CustomerRepo.list({
+    const { items, total } = await CustomerRepo.list({
       limit: take,
       offset: (currentPage - 1) * take,
     });
@@ -377,12 +374,12 @@ router.get("/customers", (req, res, next) => {
 });
 
 // ---------- Promotions ----------
-router.get("/promotions", (req, res, next) => {
+router.get("/promotions", async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    const { items, total } = PromotionRepo.list({
+    const { items, total } = await PromotionRepo.list({
       limit: take,
       offset: (currentPage - 1) * take,
     });
@@ -392,12 +389,12 @@ router.get("/promotions", (req, res, next) => {
   }
 });
 
-router.post("/promotions", uploadPromotionImage.single("image"), (req, res, next) => {
+router.post("/promotions", uploadPromotionImage.single("image"), async (req, res, next) => {
   try {
     const b = req.body;
     if (!b.title) return fail(res, "Promotion title is required", 422);
     if (!req.file) return fail(res, "Promotion banner image is required", 422);
-    const promotion = PromotionRepo.create({
+    const promotion = await PromotionRepo.create({
       title: b.title,
       subtitle: parseNullableText(b.subtitle),
       imageUrl: `/uploads/promotions/${req.file.filename}`,
@@ -412,10 +409,10 @@ router.post("/promotions", uploadPromotionImage.single("image"), (req, res, next
   }
 });
 
-router.put("/promotions/:id", uploadPromotionImage.single("image"), (req, res, next) => {
+router.put("/promotions/:id", uploadPromotionImage.single("image"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const existing = PromotionRepo.findById(id);
+    const existing = await PromotionRepo.findById(id);
     if (!existing) return fail(res, "Promotion not found", 404);
     const b = req.body;
     const fields = {};
@@ -426,7 +423,7 @@ router.put("/promotions/:id", uploadPromotionImage.single("image"), (req, res, n
     if (b.ctaUrl !== undefined) fields.ctaUrl = parseNullableText(b.ctaUrl);
     if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
     if (b.isActive !== undefined) fields.isActive = parseBoolean(b.isActive);
-    const promotion = PromotionRepo.update(id, fields);
+    const promotion = await PromotionRepo.update(id, fields);
     if (!promotion) return fail(res, "Promotion not found", 404);
     cleanupReplacedImage(existing.imageUrl, promotion.imageUrl);
     ok(res, promotion, "Promotion updated");
@@ -435,9 +432,9 @@ router.put("/promotions/:id", uploadPromotionImage.single("image"), (req, res, n
   }
 });
 
-router.patch("/promotions/:id/status", (req, res, next) => {
+router.patch("/promotions/:id/status", async (req, res, next) => {
   try {
-    const promotion = PromotionRepo.setActive(Number(req.params.id), !!req.body.isActive);
+    const promotion = await PromotionRepo.setActive(Number(req.params.id), !!req.body.isActive);
     if (!promotion) return fail(res, "Promotion not found", 404);
     ok(res, promotion, "Promotion status updated");
   } catch (e) {
@@ -445,12 +442,12 @@ router.patch("/promotions/:id/status", (req, res, next) => {
   }
 });
 
-router.delete("/promotions/:id", (req, res, next) => {
+router.delete("/promotions/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const promotion = PromotionRepo.findById(id);
+    const promotion = await PromotionRepo.findById(id);
     if (!promotion) return fail(res, "Promotion not found", 404);
-    PromotionRepo.delete(id);
+    await PromotionRepo.delete(id);
     deleteUploadedFile(promotion.imageUrl);
     ok(res, null, "Promotion deleted");
   } catch (e) {
@@ -459,12 +456,12 @@ router.delete("/promotions/:id", (req, res, next) => {
 });
 
 // ---------- Gift Boxes ----------
-router.get("/gift-boxes", (req, res, next) => {
+router.get("/gift-boxes", async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    const { items, total } = GiftBoxRepo.list({
+    const { items, total } = await GiftBoxRepo.list({
       limit: take,
       offset: (currentPage - 1) * take,
     });
@@ -474,11 +471,11 @@ router.get("/gift-boxes", (req, res, next) => {
   }
 });
 
-router.post("/gift-boxes", uploadGiftBoxImage.single("image"), (req, res, next) => {
+router.post("/gift-boxes", uploadGiftBoxImage.single("image"), async (req, res, next) => {
   try {
     const b = req.body;
     if (!b.nameEn) return fail(res, "English name is required", 422);
-    const giftBox = GiftBoxRepo.create({
+    const giftBox = await GiftBoxRepo.create({
       nameEn: b.nameEn,
       nameTa: parseNullableText(b.nameTa),
       descriptionEn: parseNullableText(b.descriptionEn),
@@ -493,10 +490,10 @@ router.post("/gift-boxes", uploadGiftBoxImage.single("image"), (req, res, next) 
   }
 });
 
-router.put("/gift-boxes/:id", uploadGiftBoxImage.single("image"), (req, res, next) => {
+router.put("/gift-boxes/:id", uploadGiftBoxImage.single("image"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const existing = GiftBoxRepo.findById(id);
+    const existing = await GiftBoxRepo.findById(id);
     if (!existing) return fail(res, "Gift box not found", 404);
     const b = req.body;
     const fields = {};
@@ -509,7 +506,7 @@ router.put("/gift-boxes/:id", uploadGiftBoxImage.single("image"), (req, res, nex
     if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
     if (b.isActive !== undefined) fields.isActive = parseBoolean(b.isActive);
 
-    const giftBox = GiftBoxRepo.update(id, fields);
+    const giftBox = await GiftBoxRepo.update(id, fields);
     if (!giftBox) return fail(res, "Gift box not found", 404);
     cleanupReplacedImage(existing.imageUrl, giftBox.imageUrl);
     ok(res, giftBox, "Gift box updated");
@@ -518,9 +515,9 @@ router.put("/gift-boxes/:id", uploadGiftBoxImage.single("image"), (req, res, nex
   }
 });
 
-router.patch("/gift-boxes/:id/status", (req, res, next) => {
+router.patch("/gift-boxes/:id/status", async (req, res, next) => {
   try {
-    const giftBox = GiftBoxRepo.setActive(Number(req.params.id), !!req.body.isActive);
+    const giftBox = await GiftBoxRepo.setActive(Number(req.params.id), !!req.body.isActive);
     if (!giftBox) return fail(res, "Gift box not found", 404);
     ok(res, giftBox, "Gift box status updated");
   } catch (e) {
@@ -528,12 +525,12 @@ router.patch("/gift-boxes/:id/status", (req, res, next) => {
   }
 });
 
-router.delete("/gift-boxes/:id", (req, res, next) => {
+router.delete("/gift-boxes/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const giftBox = GiftBoxRepo.findById(id);
+    const giftBox = await GiftBoxRepo.findById(id);
     if (!giftBox) return fail(res, "Gift box not found", 404);
-    GiftBoxRepo.delete(id);
+    await GiftBoxRepo.delete(id);
     deleteUploadedFile(giftBox.imageUrl);
     ok(res, null, "Gift box deleted");
   } catch (e) {
@@ -541,9 +538,9 @@ router.delete("/gift-boxes/:id", (req, res, next) => {
   }
 });
 
-router.get("/customers/:id", (req, res, next) => {
+router.get("/customers/:id", async (req, res, next) => {
   try {
-    const customer = CustomerRepo.findWithEstimates(Number(req.params.id));
+    const customer = await CustomerRepo.findWithEstimates(Number(req.params.id));
     if (!customer) return fail(res, "Customer not found", 404);
     ok(res, customer);
   } catch (e) {
@@ -552,33 +549,30 @@ router.get("/customers/:id", (req, res, next) => {
 });
 
 // ---------- Settings ----------
-router.get("/settings", (req, res, next) => {
+router.get("/settings", async (req, res, next) => {
   try {
-    ok(res, SettingsRepo.getAll());
+    ok(res, await SettingsRepo.getAll());
   } catch (e) {
     next(e);
   }
 });
 
-router.put("/settings", (req, res, next) => {
+router.put("/settings", async (req, res, next) => {
   try {
-    SettingsRepo.setMany(req.body || {});
-    ok(res, SettingsRepo.getAll(), "Settings updated");
+    await SettingsRepo.setMany(req.body || {});
+    ok(res, await SettingsRepo.getAll(), "Settings updated");
   } catch (e) {
     next(e);
   }
 });
 
-// Branding: logo upload. Storing the URL as a normal website_setting key
-// (logo_url) means the whole app — header, footer, admin panel, PDF export,
-// even the browser tab favicon — updates from this single source of truth
-// the moment it changes, with no code redeploy required.
-router.post("/settings/logo", uploadBrandingImage.single("logo"), (req, res, next) => {
+router.post("/settings/logo", uploadBrandingImage.single("logo"), async (req, res, next) => {
   try {
     if (!req.file) return fail(res, "Logo image is required", 422);
-    const previousLogoUrl = SettingsRepo.getAll()?.logo_url;
+    const previousSettings = await SettingsRepo.getAll();
+    const previousLogoUrl = previousSettings?.logo_url;
     const logoUrl = `/uploads/branding/${req.file.filename}`;
-    SettingsRepo.setMany({ logo_url: logoUrl });
+    await SettingsRepo.setMany({ logo_url: logoUrl });
     cleanupReplacedImage(previousLogoUrl, logoUrl);
     ok(res, { logo_url: logoUrl }, "Logo updated");
   } catch (e) {

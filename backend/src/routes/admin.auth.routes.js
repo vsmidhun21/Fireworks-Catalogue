@@ -21,13 +21,13 @@ router.post("/login", loginLimiter, async (req, res, next) => {
     const { username, password } = req.body;
     if (!username || !password) return fail(res, "Username and password are required", 422);
 
-    const admin = AdminUserRepo.findByLogin(username);
+    const admin = await AdminUserRepo.findByLogin(username);
     if (!admin) return fail(res, "Invalid credentials", 401);
 
     const validPassword = await bcrypt.compare(password, admin.passwordHash);
     if (!validPassword) return fail(res, "Invalid credentials", 401);
 
-    AdminUserRepo.updateLastLogin(admin.id);
+    await AdminUserRepo.updateLastLogin(admin.id);
 
     const token = jwt.sign(
       { sub: admin.id, username: admin.username },
@@ -48,9 +48,9 @@ router.post("/logout", requireAdmin, (req, res) => {
   ok(res, null, "Logged out");
 });
 
-router.get("/me", requireAdmin, (req, res, next) => {
+router.get("/me", requireAdmin, async (req, res, next) => {
   try {
-    const admin = AdminUserRepo.findById(req.admin.sub);
+    const admin = await AdminUserRepo.findById(req.admin.sub);
     if (!admin) return fail(res, "Not found", 404);
     ok(res, { id: admin.id, username: admin.username, email: admin.email, fullName: admin.fullName });
   } catch (e) {

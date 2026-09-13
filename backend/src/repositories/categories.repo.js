@@ -18,58 +18,64 @@ function rowToCategory(r) {
 }
 
 export const CategoryRepo = {
-  list({ activeOnly = false, limit = 10, offset = 0 } = {}) {
+  async list({ activeOnly = false, limit = 10, offset = 0 } = {}) {
     const where = activeOnly ? "WHERE is_active = 1" : "";
-    const total = db.prepare(`SELECT COUNT(*) as c FROM categories ${where}`).get().c;
-    const rows = db
+    const totalRow = await db.prepare(`SELECT COUNT(*) as c FROM categories ${where}`).get();
+    const total = Number(totalRow?.c || 0);
+    const rows = await db
       .prepare(`SELECT * FROM categories ${where} ORDER BY sort_order ASC, created_at DESC LIMIT ? OFFSET ?`)
-      .all(limit, offset);
+      .all(Number(limit), Number(offset));
     return { items: rows.map(rowToCategory), total };
   },
-  findAll({ activeOnly = false } = {}) {
+  async findAll({ activeOnly = false } = {}) {
     const sql = activeOnly
       ? "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC"
       : "SELECT * FROM categories ORDER BY sort_order ASC";
-    return db.prepare(sql).all().map(rowToCategory);
+    const rows = await db.prepare(sql).all();
+    return rows.map(rowToCategory);
   },
-  findBySlug(slug, { activeOnly = false } = {}) {
+  async findBySlug(slug, { activeOnly = false } = {}) {
     const sql = activeOnly
       ? "SELECT * FROM categories WHERE slug = ? AND is_active = 1"
       : "SELECT * FROM categories WHERE slug = ?";
-    return rowToCategory(db.prepare(sql).get(slug));
+    const row = await db.prepare(sql).get(slug);
+    return rowToCategory(row);
   },
-  findById(id) {
-    return rowToCategory(db.prepare("SELECT * FROM categories WHERE id = ?").get(id));
+  async findById(id) {
+    const row = await db.prepare("SELECT * FROM categories WHERE id = ?").get(id);
+    return rowToCategory(row);
   },
-  create({ nameEn, nameTa, slug, descriptionEn, descriptionTa, imageUrl, sortOrder }) {
-    const info = db
+  async create({ nameEn, nameTa, slug, descriptionEn, descriptionTa, imageUrl, sortOrder }) {
+    const info = await db
       .prepare(
         `INSERT INTO categories (name_en, name_ta, slug, description_en, description_ta, image_url, sort_order, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(nameEn, nameTa || null, slug, descriptionEn || null, descriptionTa || null, imageUrl || null, sortOrder || 0, nowIso());
-    return CategoryRepo.findById(Number(info.lastInsertRowid));
+    return await CategoryRepo.findById(Number(info.lastInsertRowid));
   },
-  update(id, fields) {
-    const current = CategoryRepo.findById(id);
+  async update(id, fields) {
+    const current = await CategoryRepo.findById(id);
     if (!current) return null;
     const merged = { ...current, ...fields };
-    db.prepare(
+    await db.prepare(
       `UPDATE categories SET name_en=?, name_ta=?, description_en=?, description_ta=?, image_url=?, sort_order=?, updated_at=? WHERE id=?`
     ).run(merged.nameEn, merged.nameTa, merged.descriptionEn, merged.descriptionTa, merged.imageUrl, merged.sortOrder, nowIso(), id);
-    return CategoryRepo.findById(id);
+    return await CategoryRepo.findById(id);
   },
-  setActive(id, isActive) {
-    db.prepare("UPDATE categories SET is_active=?, updated_at=? WHERE id=?").run(isActive ? 1 : 0, nowIso(), id);
-    return CategoryRepo.findById(id);
+  async setActive(id, isActive) {
+    await db.prepare("UPDATE categories SET is_active=?, updated_at=? WHERE id=?").run(isActive ? 1 : 0, nowIso(), id);
+    return await CategoryRepo.findById(id);
   },
-  countProductsInCategory(id) {
-    return db.prepare("SELECT COUNT(*) as c FROM products WHERE category_id = ?").get(id).c;
+  async countProductsInCategory(id) {
+    const row = await db.prepare("SELECT COUNT(*) as c FROM products WHERE category_id = ?").get(id);
+    return Number(row?.c || 0);
   },
-  delete(id) {
-    db.prepare("DELETE FROM categories WHERE id = ?").run(id);
+  async delete(id) {
+    await db.prepare("DELETE FROM categories WHERE id = ?").run(id);
   },
-  count() {
-    return db.prepare("SELECT COUNT(*) as c FROM categories").get().c;
+  async count() {
+    const row = await db.prepare("SELECT COUNT(*) as c FROM categories").get();
+    return Number(row?.c || 0);
   },
 };

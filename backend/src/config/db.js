@@ -1,241 +1,55 @@
-// Lightweight data layer using Node's built-in `node:sqlite` module (Node 22.5+).
-//
-// WHY NOT PRISMA/MYSQL HERE: this sandbox has no network access to download
-// Prisma's query-engine binaries, and MySQL isn't running locally. node:sqlite
-// requires no native compilation or downloads, so the app runs anywhere.
-//
-// FOR PRODUCTION (Hostinger / MySQL): see docs/DATABASE.md — swap this file
-// for a mysql2/Prisma-MySQL data layer. The route files only call the
-// functions exported here, so the swap does not touch business logic.
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
 
-import { DatabaseSync } from "node:sqlite";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+dotenv.config();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = process.env.DATABASE_FILE || path.join(__dirname, "../../data/app.db");
+export const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  charset: "utf8mb4",
+  decimalNumbers: true,
+});
 
-export const db = new DatabaseSync(DB_PATH);
-
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA foreign_keys = ON;
-
-  CREATE TABLE IF NOT EXISTS admin_users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    full_name TEXT,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    last_login_at TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name_en TEXT NOT NULL,
-    name_ta TEXT,
-    slug TEXT UNIQUE NOT NULL,
-    description_en TEXT,
-    description_ta TEXT,
-    image_url TEXT,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    category_id INTEGER NOT NULL REFERENCES categories(id),
-    product_code TEXT UNIQUE NOT NULL,
-    name_en TEXT NOT NULL,
-    name_ta TEXT,
-    slug TEXT UNIQUE NOT NULL,
-    description_en TEXT,
-    description_ta TEXT,
-    unit TEXT NOT NULL DEFAULT 'Box',
-    original_price REAL NOT NULL,
-    discounted_price REAL,
-    image_url TEXT,
-    is_featured INTEGER NOT NULL DEFAULT 0,
-    is_new_arrival INTEGER NOT NULL DEFAULT 0,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
-  CREATE INDEX IF NOT EXISTS idx_products_featured ON products(is_featured);
-  CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);
-
-  CREATE TABLE IF NOT EXISTS customers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    email TEXT,
-    address TEXT,
-    city TEXT,
-    state TEXT,
-    pincode TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS estimates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    estimate_number TEXT UNIQUE NOT NULL,
-    customer_id INTEGER NOT NULL REFERENCES customers(id),
-    subtotal REAL NOT NULL,
-    total_discount REAL NOT NULL DEFAULT 0,
-    estimated_total REAL NOT NULL,
-    status TEXT NOT NULL DEFAULT 'NEW',
-    customer_notes TEXT,
-    admin_notes TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-
-  -- Keep the earliest customer row when upgrading databases that predate the
-  -- unique phone constraint, and preserve its estimate relationships.
-  UPDATE estimates
-  SET customer_id = (
-    SELECT MIN(c2.id)
-    FROM customers c2
-    WHERE c2.phone = (SELECT c1.phone FROM customers c1 WHERE c1.id = estimates.customer_id)
-  )
-  WHERE customer_id IN (
-    SELECT c.id
-    FROM customers c
-    JOIN customers keeper ON keeper.phone = c.phone AND keeper.id < c.id
-  );
-  DELETE FROM customers
-  WHERE id IN (
-    SELECT c.id
-    FROM customers c
-    JOIN customers keeper ON keeper.phone = c.phone AND keeper.id < c.id
-  );
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
-  CREATE INDEX IF NOT EXISTS idx_estimates_status ON estimates(status);
-
-  CREATE TABLE IF NOT EXISTS estimate_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    estimate_id INTEGER NOT NULL REFERENCES estimates(id),
-    product_id INTEGER NOT NULL REFERENCES products(id),
-    product_code TEXT NOT NULL,
-    product_name_en TEXT NOT NULL,
-    product_name_ta TEXT,
-    unit TEXT NOT NULL,
-    quantity INTEGER NOT NULL,
-    original_unit_price REAL NOT NULL,
-    discounted_unit_price REAL,
-    line_total REAL NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS website_settings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    setting_key TEXT UNIQUE NOT NULL,
-    setting_value TEXT,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS promotions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    subtitle TEXT,
-    image_url TEXT NOT NULL,
-    cta_label TEXT,
-    cta_url TEXT,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE INDEX IF NOT EXISTS idx_promotions_active_sort ON promotions(is_active, sort_order);
-
-  CREATE TABLE IF NOT EXISTS gift_boxes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name_en TEXT NOT NULL,
-    name_ta TEXT,
-    description_en TEXT,
-    description_ta TEXT,
-    image_url TEXT,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE INDEX IF NOT EXISTS idx_gift_boxes_active_sort ON gift_boxes(is_active, sort_order);
-`);
-
-// Point-in-time customer snapshot columns on `estimates`, added via a
-// runtime migration (ALTER TABLE) rather than baked into the CREATE TABLE
-// above, so existing databases pick them up on next startup without a
-// manual migration step. Mirrors the pattern already used for
-// estimate_items (product_code/product_name_en/... are copied at creation
-// time so a later product edit can't silently rewrite a past estimate).
-// Without this, `estimates.customer_id` pointed at a single mutable
-// `customers` row — a later address/name change for that phone number
-// (a repeat customer moving house, a relative using the same phone for a
-// different order) would retroactively change what every past estimate
-// showed the admin, even for orders that were already fulfilled.
-function ensureEstimateCustomerSnapshotColumns() {
-  const existingColumns = db.prepare("PRAGMA table_info(estimates)").all().map((c) => c.name);
-  const snapshotColumns = [
-    "customer_name",
-    "customer_phone",
-    "customer_email",
-    "customer_address",
-    "customer_city",
-    "customer_state",
-    "customer_pincode",
-  ];
-  for (const column of snapshotColumns) {
-    if (!existingColumns.includes(column)) {
-      db.exec(`ALTER TABLE estimates ADD COLUMN ${column} TEXT`);
-    }
-  }
-}
-ensureEstimateCustomerSnapshotColumns();
-
-// Backfill snapshot columns for any pre-existing estimates (created before
-// this migration) from their current linked customer row. This is a
-// best-effort, one-time backfill only — it cannot recover the customer's
-// details as they were at the original time of order (that information was
-// never stored), but it ensures older estimates have *some* value in the
-// new columns instead of NULL, and behave consistently going forward.
-db.exec(`
-  UPDATE estimates
-  SET
-    customer_name = (SELECT name FROM customers WHERE customers.id = estimates.customer_id),
-    customer_phone = (SELECT phone FROM customers WHERE customers.id = estimates.customer_id),
-    customer_email = (SELECT email FROM customers WHERE customers.id = estimates.customer_id),
-    customer_address = (SELECT address FROM customers WHERE customers.id = estimates.customer_id),
-    customer_city = (SELECT city FROM customers WHERE customers.id = estimates.customer_id),
-    customer_state = (SELECT state FROM customers WHERE customers.id = estimates.customer_id),
-    customer_pincode = (SELECT pincode FROM customers WHERE customers.id = estimates.customer_id)
-  WHERE customer_name IS NULL
-`);
-
-// NOTE: Product codes are permanent, immutable identifiers assigned once at
-// creation time (see ProductRepo.nextProductCode / ProductRepo.create in
-// products.repo.js). They are intentionally NEVER recalculated or
-// renumbered here on startup:
-//   1. Renumbering products on every restart previously rewrote
-//      estimate_items.product_code for past estimates, silently changing
-//      historical records that must remain a frozen snapshot of what the
-//      customer actually saw/was quoted at submission time.
-//   2. Renumbering also enforced a hard 999-product ceiling as an
-//      unhandled throw at module-load time, which could crash the entire
-//      server on startup once the catalogue grew past 999 products.
-// The 999-product limit is still enforced, but only at product-creation
-// time (see ProductRepo.nextProductCode), where it surfaces as a normal
-// 422 API error instead of a startup failure. Deleting products simply
-// leaves a gap in the code sequence, which is expected and safe.
+export const db = {
+  pool,
+  prepare(sql) {
+    return {
+      async get(...args) {
+        const params = args.flat();
+        const [rows] = await pool.query(sql, params);
+        return rows && rows.length > 0 ? rows[0] : null;
+      },
+      async all(...args) {
+        const params = args.flat();
+        const [rows] = await pool.query(sql, params);
+        return rows || [];
+      },
+      async run(...args) {
+        const params = args.flat();
+        const [result] = await pool.query(sql, params);
+        return {
+          lastInsertRowid: result.insertId,
+          changes: result.affectedRows,
+        };
+      },
+    };
+  },
+  async query(sql, params = []) {
+    const [rows] = await pool.query(sql, params);
+    return rows;
+  },
+  async execute(sql, params = []) {
+    const [result] = await pool.query(sql, params);
+    return result;
+  },
+};
 
 export function nowIso() {
-  return new Date().toISOString();
+  return new Date();
 }

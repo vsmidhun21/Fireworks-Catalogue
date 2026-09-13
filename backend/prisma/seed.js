@@ -232,10 +232,10 @@ const fullCatalogue = [
 
 async function main() {
   console.log("Seeding admin user...");
-  const existingAdmin = AdminUserRepo.findByLogin("admin");
+  const existingAdmin = await AdminUserRepo.findByLogin("admin");
   if (!existingAdmin) {
     const passwordHash = await bcrypt.hash("Admin@123", 10);
-    AdminUserRepo.create({
+    await AdminUserRepo.create({
       username: "admin",
       email: "admin@srirrcrackers.example",
       passwordHash,
@@ -249,9 +249,9 @@ async function main() {
   for (const catGroup of fullCatalogue) {
     sortOrder += 1;
     const slug = slugify(catGroup.category);
-    let category = CategoryRepo.findBySlug(slug);
+    let category = await CategoryRepo.findBySlug(slug);
     if (!category) {
-      category = CategoryRepo.create({
+      category = await CategoryRepo.create({
         nameEn: catGroup.category,
         nameTa: catGroup.categoryTa,
         slug: slug,
@@ -259,7 +259,7 @@ async function main() {
         sortOrder,
       });
     } else {
-      CategoryRepo.update(category.id, {
+      await CategoryRepo.update(category.id, {
         nameEn: catGroup.category,
         nameTa: catGroup.categoryTa,
         sortOrder,
@@ -270,9 +270,9 @@ async function main() {
     for (const p of catGroup.items) {
       pSort += 1;
       const productCode = String(++productNumber).padStart(3, "0");
-      const existingProduct = ProductRepo.findByCode(productCode);
+      const existingProduct = await ProductRepo.findByCode(productCode);
       if (existingProduct) {
-        ProductRepo.update(existingProduct.id, {
+        await ProductRepo.update(existingProduct.id, {
           categoryId: category.id,
           nameEn: p.nameEn,
           nameTa: p.nameTa,
@@ -283,7 +283,7 @@ async function main() {
           sortOrder: pSort,
         });
       } else {
-        ProductRepo.create({
+        await ProductRepo.create({
           categoryId: category.id,
           productCode,
           nameEn: p.nameEn,
@@ -301,7 +301,7 @@ async function main() {
   }
 
   console.log("Seeding website settings...");
-  SettingsRepo.setMany({
+  await SettingsRepo.setMany({
     business_name: "Sri RR Crackers",
     phone_primary: "87540 66248",
     phone_secondary: "88257 21391",
@@ -357,6 +357,7 @@ async function main() {
   });
 
   console.log("Official catalog seed complete! All products and categories loaded.");
+  process.exit(0);
 }
 
 main().catch((e) => {

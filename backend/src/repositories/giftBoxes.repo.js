@@ -17,25 +17,28 @@ function rowToGiftBox(r) {
 }
 
 export const GiftBoxRepo = {
-  list({ activeOnly = false, limit = 10, offset = 0 } = {}) {
+  async list({ activeOnly = false, limit = 10, offset = 0 } = {}) {
     const where = activeOnly ? "WHERE is_active = 1" : "";
-    const total = db.prepare(`SELECT COUNT(*) as c FROM gift_boxes ${where}`).get().c;
-    const rows = db
+    const totalRow = await db.prepare(`SELECT COUNT(*) as c FROM gift_boxes ${where}`).get();
+    const total = Number(totalRow?.c || 0);
+    const rows = await db
       .prepare(`SELECT * FROM gift_boxes ${where} ORDER BY sort_order ASC, created_at DESC LIMIT ? OFFSET ?`)
-      .all(limit, offset);
+      .all(Number(limit), Number(offset));
     return { items: rows.map(rowToGiftBox), total };
   },
-  findAll({ activeOnly = false } = {}) {
+  async findAll({ activeOnly = false } = {}) {
     const sql = activeOnly
       ? "SELECT * FROM gift_boxes WHERE is_active = 1 ORDER BY sort_order ASC"
       : "SELECT * FROM gift_boxes ORDER BY sort_order ASC";
-    return db.prepare(sql).all().map(rowToGiftBox);
+    const rows = await db.prepare(sql).all();
+    return rows.map(rowToGiftBox);
   },
-  findById(id) {
-    return rowToGiftBox(db.prepare("SELECT * FROM gift_boxes WHERE id = ?").get(id));
+  async findById(id) {
+    const row = await db.prepare("SELECT * FROM gift_boxes WHERE id = ?").get(id);
+    return rowToGiftBox(row);
   },
-  create({ nameEn, nameTa, descriptionEn, descriptionTa, imageUrl, sortOrder = 0, isActive = true }) {
-    const info = db
+  async create({ nameEn, nameTa, descriptionEn, descriptionTa, imageUrl, sortOrder = 0, isActive = true }) {
+    const info = await db
       .prepare(
         `INSERT INTO gift_boxes (name_en, name_ta, description_en, description_ta, image_url, sort_order, is_active, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
@@ -50,13 +53,13 @@ export const GiftBoxRepo = {
         isActive ? 1 : 0,
         nowIso()
       );
-    return GiftBoxRepo.findById(Number(info.lastInsertRowid));
+    return await GiftBoxRepo.findById(Number(info.lastInsertRowid));
   },
-  update(id, fields) {
-    const current = GiftBoxRepo.findById(id);
+  async update(id, fields) {
+    const current = await GiftBoxRepo.findById(id);
     if (!current) return null;
     const merged = { ...current, ...fields };
-    db.prepare(
+    await db.prepare(
       `UPDATE gift_boxes
        SET name_en = ?, name_ta = ?, description_en = ?, description_ta = ?, image_url = ?, sort_order = ?, is_active = ?, updated_at = ?
        WHERE id = ?`
@@ -71,16 +74,17 @@ export const GiftBoxRepo = {
       nowIso(),
       id
     );
-    return GiftBoxRepo.findById(id);
+    return await GiftBoxRepo.findById(id);
   },
-  setActive(id, isActive) {
-    db.prepare("UPDATE gift_boxes SET is_active = ?, updated_at = ? WHERE id = ?").run(isActive ? 1 : 0, nowIso(), id);
-    return GiftBoxRepo.findById(id);
+  async setActive(id, isActive) {
+    await db.prepare("UPDATE gift_boxes SET is_active = ?, updated_at = ? WHERE id = ?").run(isActive ? 1 : 0, nowIso(), id);
+    return await GiftBoxRepo.findById(id);
   },
-  delete(id) {
-    db.prepare("DELETE FROM gift_boxes WHERE id = ?").run(id);
+  async delete(id) {
+    await db.prepare("DELETE FROM gift_boxes WHERE id = ?").run(id);
   },
-  count() {
-    return db.prepare("SELECT COUNT(*) as c FROM gift_boxes").get().c;
+  async count() {
+    const row = await db.prepare("SELECT COUNT(*) as c FROM gift_boxes").get();
+    return Number(row?.c || 0);
   },
 };

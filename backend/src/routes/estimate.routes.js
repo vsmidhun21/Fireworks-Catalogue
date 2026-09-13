@@ -51,7 +51,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
 
     // Re-validate every product server-side (never trust client price/quantity)
     const productIds = [...new Set(items.map((i) => Number(i.productId)))];
-    const dbProducts = ProductRepo.findManyByIds(productIds);
+    const dbProducts = await ProductRepo.findManyByIds(productIds);
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
 
     let subtotal = 0;
@@ -97,7 +97,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
       );
     }
 
-    const dbCustomer = CustomerRepo.create({
+    const dbCustomer = await CustomerRepo.create({
       name: customer.name,
       phone: customer.phone,
       email: customer.email || null,
@@ -107,12 +107,8 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
       pincode: customer.pincode,
     });
 
-    const created = EstimateRepo.createWithItems({
+    const created = await EstimateRepo.createWithItems({
       customerId: dbCustomer.id,
-      // Snapshot the exact customer details submitted with THIS estimate
-      // (not just whatever the master customer record currently holds),
-      // so this order's paperwork is immutable even if the customer's
-      // master record is later updated by a different, later estimate.
       customerSnapshot: {
         name: customer.name,
         phone: customer.phone,
@@ -129,24 +125,14 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
       items: preparedItems,
     });
 
-    // Respond to the customer immediately: the estimate is already safely
-    // committed to the database at this point, so there is nothing left
-    // that should make them wait. Sending the admin notification email is
-    // a side effect for the business, not something the customer's
-    // request should be held hostage to (SMTP round-trips can easily take
-    // several seconds, especially over Gmail SMTP).
     ok(res, created, "Estimate submitted successfully", 201);
 
-    // Fire-and-forget: send the admin email notification in the
-    // background, after the response has already been sent. Failures are
-    // logged only — they must never affect the customer-facing request,
-    // which has already completed successfully by this point.
     (async () => {
       const maxRetries = 3;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           await sendNewEstimateAdminEmail(created);
-          break; // Success, exit retry loop
+          break;
         } catch (emailErr) {
           if (attempt === maxRetries) {
             console.error(
@@ -168,11 +154,10 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
   }
 });
 
-router.get("/estimates/:estimateNumber", (req, res, next) => {
+router.get("/estimates/:estimateNumber", async (req, res, next) => {
   try {
-    const estimate = EstimateRepo.findByNumber(req.params.estimateNumber);
+    const estimate = await EstimateRepo.findByNumber(req.params.estimateNumber);
     if (!estimate) return fail(res, "Estimate not found", 404);
-    // Do not return full customer PII on public lookup
     ok(res, {
       estimateNumber: estimate.estimateNumber,
       status: estimate.status,

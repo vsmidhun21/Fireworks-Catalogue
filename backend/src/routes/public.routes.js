@@ -9,17 +9,17 @@ import { ok, fail } from "../utils/response.js";
 const router = Router();
 
 // ---------- Categories ----------
-router.get("/categories", (req, res, next) => {
+router.get("/categories", async (req, res, next) => {
   try {
-    ok(res, CategoryRepo.findAll({ activeOnly: true }));
+    ok(res, await CategoryRepo.findAll({ activeOnly: true }));
   } catch (e) {
     next(e);
   }
 });
 
-router.get("/categories/:slug", (req, res, next) => {
+router.get("/categories/:slug", async (req, res, next) => {
   try {
-    const category = CategoryRepo.findBySlug(req.params.slug, { activeOnly: true });
+    const category = await CategoryRepo.findBySlug(req.params.slug, { activeOnly: true });
     if (!category) return fail(res, "Category not found", 404);
     ok(res, category);
   } catch (e) {
@@ -28,7 +28,7 @@ router.get("/categories/:slug", (req, res, next) => {
 });
 
 // ---------- Products ----------
-router.get("/products", (req, res, next) => {
+router.get("/products", async (req, res, next) => {
   try {
     const { category, search, featured, sort, page, limit } = req.query;
 
@@ -38,7 +38,7 @@ router.get("/products", (req, res, next) => {
     const paginated = page !== undefined || limit !== undefined;
 
     if (!paginated) {
-      const { items, total } = ProductRepo.list({
+      const { items, total } = await ProductRepo.list({
         activeOnly: true,
         categorySlug: category,
         search,
@@ -50,7 +50,7 @@ router.get("/products", (req, res, next) => {
 
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    const { items, total } = ProductRepo.list({
+    const { items, total } = await ProductRepo.list({
       activeOnly: true,
       categorySlug: category,
       search,
@@ -65,17 +65,17 @@ router.get("/products", (req, res, next) => {
   }
 });
 
-router.get("/products/featured", (req, res, next) => {
+router.get("/products/featured", async (req, res, next) => {
   try {
-    ok(res, ProductRepo.featured(8));
+    ok(res, await ProductRepo.featured(8));
   } catch (e) {
     next(e);
   }
 });
 
-router.get("/products/:slug", (req, res, next) => {
+router.get("/products/:slug", async (req, res, next) => {
   try {
-    const product = ProductRepo.findBySlug(req.params.slug, { activeOnly: true });
+    const product = await ProductRepo.findBySlug(req.params.slug, { activeOnly: true });
     if (!product) return fail(res, "Product not found", 404);
     ok(res, product);
   } catch (e) {
@@ -83,12 +83,12 @@ router.get("/products/:slug", (req, res, next) => {
   }
 });
 
-router.get("/promotions", (req, res, next) => {
+router.get("/promotions", async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const take = Math.min(parseInt(limit, 10) || 10, 100);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    const { items, total } = PromotionRepo.list({
+    const { items, total } = await PromotionRepo.list({
       activeOnly: true,
       limit: take,
       offset: (currentPage - 1) * take,
@@ -100,9 +100,9 @@ router.get("/promotions", (req, res, next) => {
 });
 
 // ---------- Settings (public subset) ----------
-router.get("/settings/public", (req, res, next) => {
+router.get("/settings/public", async (req, res, next) => {
   try {
-    ok(res, SettingsRepo.getAll());
+    ok(res, await SettingsRepo.getAll());
   } catch (e) {
     next(e);
   }
@@ -110,9 +110,9 @@ router.get("/settings/public", (req, res, next) => {
 
 // ---------- Gift Boxes ----------
 // Active gift boxes only, sorted for display. No admin auth required.
-router.get("/gift-boxes", (req, res, next) => {
+router.get("/gift-boxes", async (req, res, next) => {
   try {
-    ok(res, GiftBoxRepo.findAll({ activeOnly: true }));
+    ok(res, await GiftBoxRepo.findAll({ activeOnly: true }));
   } catch (e) {
     next(e);
   }
