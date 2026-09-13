@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Lock, User, Loader2, LogIn } from "lucide-react";
+import { Lock, User, Loader2, LogIn, Clock } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import Logo from "../../components/common/Logo";
 
@@ -12,6 +12,11 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Set by AuthContext when it redirects here after an expired/invalidated
+  // session (see ADMIN_SESSION_EXPIRED_EVENT in services/api.js) — gives the
+  // admin a clear reason for the redirect instead of landing back on the
+  // login form with no explanation.
+  const sessionExpired = Boolean(location.state?.sessionExpired);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -37,6 +42,13 @@ export default function AdminLogin() {
         </div>
         <h1 className="font-display text-xl font-bold text-brand-navy text-center mb-1">Admin Portal</h1>
         <p className="text-xs text-brand-muted text-center mb-6">Sri RR Crackers Management Dashboard</p>
+
+        {sessionExpired && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2.5 mb-4 flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            <span>Your session has expired. Please sign in again.</span>
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -85,10 +97,6 @@ export default function AdminLogin() {
             )}
           </button>
         </form>
-
-        <p className="text-[11px] text-brand-muted text-center mt-6">
-          Demo credentials: <span className="font-mono font-semibold">admin / Admin@123</span>
-        </p>
       </div>
     </div>
   );

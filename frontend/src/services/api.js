@@ -18,9 +18,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Fired whenever an authenticated /admin/* request comes back 401 outside of
+// the login attempt itself — i.e. the JWT expired or was invalidated while
+// the admin was actively using the panel, not a wrong-password response from
+// the login form. AuthContext listens for this to clear the stale session
+// and redirect back to /admin/login, instead of leaving the admin stuck on
+// a protected page where every subsequent action just fails silently.
+export const ADMIN_SESSION_EXPIRED_EVENT = "rr-admin-session-expired";
+
 api.interceptors.response.use(
   (res) => res.data,
   (err) => {
+    const status = err.response?.status;
+    const url = err.config?.url || "";
+    const isAdminRequest = url.includes("/admin");
+    const isLoginAttempt = url.includes("/admin/auth/login");
+
+    if (status === 401 && isAdminRequest && !isLoginAttempt) {
+      localStorage.removeItem("rr_admin_token");
+      window.dispatchEvent(new CustomEvent(ADMIN_SESSION_EXPIRED_EVENT));
+    }
+
     const message = err.response?.data?.message || "Something went wrong. Please try again.";
     return Promise.reject({ ...err, message });
   }

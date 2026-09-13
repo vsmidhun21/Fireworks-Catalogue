@@ -171,6 +171,55 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_gift_boxes_active_sort ON gift_boxes(is_active, sort_order);
 `);
 
+// Point-in-time customer snapshot columns on `estimates`, added via a
+// runtime migration (ALTER TABLE) rather than baked into the CREATE TABLE
+// above, so existing databases pick them up on next startup without a
+// manual migration step. Mirrors the pattern already used for
+// estimate_items (product_code/product_name_en/... are copied at creation
+// time so a later product edit can't silently rewrite a past estimate).
+// Without this, `estimates.customer_id` pointed at a single mutable
+// `customers` row — a later address/name change for that phone number
+// (a repeat customer moving house, a relative using the same phone for a
+// different order) would retroactively change what every past estimate
+// showed the admin, even for orders that were already fulfilled.
+function ensureEstimateCustomerSnapshotColumns() {
+  const existingColumns = db.prepare("PRAGMA table_info(estimates)").all().map((c) => c.name);
+  const snapshotColumns = [
+    "customer_name",
+    "customer_phone",
+    "customer_email",
+    "customer_address",
+    "customer_city",
+    "customer_state",
+    "customer_pincode",
+  ];
+  for (const column of snapshotColumns) {
+    if (!existingColumns.includes(column)) {
+      db.exec(`ALTER TABLE estimates ADD COLUMN ${column} TEXT`);
+    }
+  }
+}
+ensureEstimateCustomerSnapshotColumns();
+
+// Backfill snapshot columns for any pre-existing estimates (created before
+// this migration) from their current linked customer row. This is a
+// best-effort, one-time backfill only — it cannot recover the customer's
+// details as they were at the original time of order (that information was
+// never stored), but it ensures older estimates have *some* value in the
+// new columns instead of NULL, and behave consistently going forward.
+db.exec(`
+  UPDATE estimates
+  SET
+    customer_name = (SELECT name FROM customers WHERE customers.id = estimates.customer_id),
+    customer_phone = (SELECT phone FROM customers WHERE customers.id = estimates.customer_id),
+    customer_email = (SELECT email FROM customers WHERE customers.id = estimates.customer_id),
+    customer_address = (SELECT address FROM customers WHERE customers.id = estimates.customer_id),
+    customer_city = (SELECT city FROM customers WHERE customers.id = estimates.customer_id),
+    customer_state = (SELECT state FROM customers WHERE customers.id = estimates.customer_id),
+    customer_pincode = (SELECT pincode FROM customers WHERE customers.id = estimates.customer_id)
+  WHERE customer_name IS NULL
+`);
+
 // NOTE: Product codes are permanent, immutable identifiers assigned once at
 // creation time (see ProductRepo.nextProductCode / ProductRepo.create in
 // products.repo.js). They are intentionally NEVER recalculated or

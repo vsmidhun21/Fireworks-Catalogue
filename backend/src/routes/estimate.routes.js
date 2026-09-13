@@ -2,7 +2,7 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { ProductRepo } from "../repositories/products.repo.js";
 import { CustomerRepo, EstimateRepo } from "../repositories/estimates.repo.js";
-import { ok, fail, generateEstimateNumber } from "../utils/response.js";
+import { ok, fail } from "../utils/response.js";
 import { sendNewEstimateAdminEmail } from "../services/email.service.js";
 
 const router = Router();
@@ -97,8 +97,6 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
       );
     }
 
-    const estimateNumber = generateEstimateNumber();
-
     const dbCustomer = CustomerRepo.create({
       name: customer.name,
       phone: customer.phone,
@@ -110,8 +108,20 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
     });
 
     const created = EstimateRepo.createWithItems({
-      estimateNumber,
       customerId: dbCustomer.id,
+      // Snapshot the exact customer details submitted with THIS estimate
+      // (not just whatever the master customer record currently holds),
+      // so this order's paperwork is immutable even if the customer's
+      // master record is later updated by a different, later estimate.
+      customerSnapshot: {
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email || null,
+        address: customer.address,
+        city: customer.city,
+        state: customer.state,
+        pincode: customer.pincode,
+      },
       subtotal,
       totalDiscount,
       estimatedTotal,

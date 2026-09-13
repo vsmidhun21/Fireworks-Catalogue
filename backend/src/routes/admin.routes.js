@@ -12,6 +12,8 @@ import {
   uploadBrandingImage,
   uploadGiftBoxImage,
   uploadCategoryImage,
+  deleteUploadedFile,
+  cleanupReplacedImage,
 } from "../middleware/upload.js";
 
 const router = Router();
@@ -132,6 +134,9 @@ router.post("/categories", uploadCategoryImage.single("image"), (req, res, next)
 
 router.put("/categories/:id", uploadCategoryImage.single("image"), (req, res, next) => {
   try {
+    const id = Number(req.params.id);
+    const existing = CategoryRepo.findById(id);
+    if (!existing) return fail(res, "Category not found", 404);
     const b = req.body;
     const fields = { ...b };
     if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
@@ -141,8 +146,10 @@ router.put("/categories/:id", uploadCategoryImage.single("image"), (req, res, ne
       // Empty string means "remove the existing image" (falls back to placeholder on the frontend).
       fields.imageUrl = parseNullableText(b.imageUrl);
     }
-    const category = CategoryRepo.update(Number(req.params.id), fields);
+    const category = CategoryRepo.update(id, fields);
     if (!category) return fail(res, "Category not found", 404);
+    // Clean up the old file on disk whenever the image was replaced/removed.
+    cleanupReplacedImage(existing.imageUrl, category.imageUrl);
     ok(res, category, "Category updated");
   } catch (e) {
     next(e);
@@ -161,12 +168,17 @@ router.patch("/categories/:id/status", (req, res, next) => {
 router.delete("/categories/:id", (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    const category = CategoryRepo.findById(id);
+    if (!category) return fail(res, "Category not found", 404);
     const inUse = CategoryRepo.countProductsInCategory(id);
     if (inUse > 0) {
       CategoryRepo.setActive(id, false);
       return ok(res, null, "Category has products; archived instead of deleted");
     }
     CategoryRepo.delete(id);
+    // Only remove the image file on an actual hard delete — an archived
+    // category is still shown/edited in admin and must keep its image.
+    deleteUploadedFile(category.imageUrl);
     ok(res, null, "Category deleted");
   } catch (e) {
     next(e);
@@ -239,6 +251,9 @@ router.post("/products", uploadProductImage.single("image"), (req, res, next) =>
 
 router.put("/products/:id", uploadProductImage.single("image"), (req, res, next) => {
   try {
+    const id = Number(req.params.id);
+    const existing = ProductRepo.findById(id);
+    if (!existing) return fail(res, "Product not found", 404);
     const b = req.body;
     const fields = {};
     if (b.categoryId != null) fields.categoryId = Number(b.categoryId);
@@ -257,8 +272,10 @@ router.put("/products/:id", uploadProductImage.single("image"), (req, res, next)
     if (b.isNewArrival !== undefined) fields.isNewArrival = parseBoolean(b.isNewArrival);
     if (b.sortOrder != null) fields.sortOrder = Number(b.sortOrder);
 
-    const product = ProductRepo.update(Number(req.params.id), fields);
+    const product = ProductRepo.update(id, fields);
     if (!product) return fail(res, "Product not found", 404);
+    // Clean up the old file on disk whenever the image was replaced.
+    cleanupReplacedImage(existing.imageUrl, product.imageUrl);
     ok(res, product, "Product updated");
   } catch (e) {
     if (e.status === 409) return fail(res, e.message, 409);
@@ -285,12 +302,17 @@ router.patch("/products/:id/featured", (req, res, next) => {
 router.delete("/products/:id", (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    const product = ProductRepo.findById(id);
+    if (!product) return fail(res, "Product not found", 404);
     const usedInEstimates = ProductRepo.usedInEstimates(id);
     if (usedInEstimates > 0) {
       ProductRepo.setActive(id, false);
       return ok(res, null, "Product used in past estimates; archived instead of deleted");
     }
     ProductRepo.delete(id);
+    // Only remove the image file on an actual hard delete — an archived
+    // product is still shown/edited in admin and must keep its image.
+    deleteUploadedFile(product.imageUrl);
     ok(res, null, "Product deleted");
   } catch (e) {
     next(e);
@@ -392,6 +414,9 @@ router.post("/promotions", uploadPromotionImage.single("image"), (req, res, next
 
 router.put("/promotions/:id", uploadPromotionImage.single("image"), (req, res, next) => {
   try {
+    const id = Number(req.params.id);
+    const existing = PromotionRepo.findById(id);
+    if (!existing) return fail(res, "Promotion not found", 404);
     const b = req.body;
     const fields = {};
     if (b.title != null) fields.title = b.title;
@@ -401,8 +426,9 @@ router.put("/promotions/:id", uploadPromotionImage.single("image"), (req, res, n
     if (b.ctaUrl !== undefined) fields.ctaUrl = parseNullableText(b.ctaUrl);
     if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
     if (b.isActive !== undefined) fields.isActive = parseBoolean(b.isActive);
-    const promotion = PromotionRepo.update(Number(req.params.id), fields);
+    const promotion = PromotionRepo.update(id, fields);
     if (!promotion) return fail(res, "Promotion not found", 404);
+    cleanupReplacedImage(existing.imageUrl, promotion.imageUrl);
     ok(res, promotion, "Promotion updated");
   } catch (e) {
     next(e);
@@ -421,7 +447,11 @@ router.patch("/promotions/:id/status", (req, res, next) => {
 
 router.delete("/promotions/:id", (req, res, next) => {
   try {
-    PromotionRepo.delete(Number(req.params.id));
+    const id = Number(req.params.id);
+    const promotion = PromotionRepo.findById(id);
+    if (!promotion) return fail(res, "Promotion not found", 404);
+    PromotionRepo.delete(id);
+    deleteUploadedFile(promotion.imageUrl);
     ok(res, null, "Promotion deleted");
   } catch (e) {
     next(e);
@@ -465,6 +495,9 @@ router.post("/gift-boxes", uploadGiftBoxImage.single("image"), (req, res, next) 
 
 router.put("/gift-boxes/:id", uploadGiftBoxImage.single("image"), (req, res, next) => {
   try {
+    const id = Number(req.params.id);
+    const existing = GiftBoxRepo.findById(id);
+    if (!existing) return fail(res, "Gift box not found", 404);
     const b = req.body;
     const fields = {};
     if (b.nameEn != null) fields.nameEn = b.nameEn;
@@ -476,8 +509,9 @@ router.put("/gift-boxes/:id", uploadGiftBoxImage.single("image"), (req, res, nex
     if (b.sortOrder !== undefined) fields.sortOrder = parseNullableNumber(b.sortOrder) ?? 0;
     if (b.isActive !== undefined) fields.isActive = parseBoolean(b.isActive);
 
-    const giftBox = GiftBoxRepo.update(Number(req.params.id), fields);
+    const giftBox = GiftBoxRepo.update(id, fields);
     if (!giftBox) return fail(res, "Gift box not found", 404);
+    cleanupReplacedImage(existing.imageUrl, giftBox.imageUrl);
     ok(res, giftBox, "Gift box updated");
   } catch (e) {
     next(e);
@@ -500,6 +534,7 @@ router.delete("/gift-boxes/:id", (req, res, next) => {
     const giftBox = GiftBoxRepo.findById(id);
     if (!giftBox) return fail(res, "Gift box not found", 404);
     GiftBoxRepo.delete(id);
+    deleteUploadedFile(giftBox.imageUrl);
     ok(res, null, "Gift box deleted");
   } catch (e) {
     next(e);
@@ -541,8 +576,10 @@ router.put("/settings", (req, res, next) => {
 router.post("/settings/logo", uploadBrandingImage.single("logo"), (req, res, next) => {
   try {
     if (!req.file) return fail(res, "Logo image is required", 422);
+    const previousLogoUrl = SettingsRepo.getAll()?.logo_url;
     const logoUrl = `/uploads/branding/${req.file.filename}`;
     SettingsRepo.setMany({ logo_url: logoUrl });
+    cleanupReplacedImage(previousLogoUrl, logoUrl);
     ok(res, { logo_url: logoUrl }, "Logo updated");
   } catch (e) {
     next(e);
