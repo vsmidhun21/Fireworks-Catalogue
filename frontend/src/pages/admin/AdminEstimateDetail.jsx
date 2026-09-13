@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, User, Receipt, Loader2, Save } from "lucide-react";
+import { ArrowLeft, User, Receipt, Loader2, Save, Printer } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
+import { downloadEstimatePDF } from "../../utils/pdfGenerator";
 
 const statuses = ["NEW", "CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
 
@@ -11,6 +12,7 @@ export default function AdminEstimateDetail() {
   const [estimate, setEstimate] = useState(null);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   function load() {
     AdminEstimateService.get(id).then((res) => {
@@ -39,6 +41,15 @@ export default function AdminEstimateDetail() {
     }
   }
 
+  function handlePrintEstimate() {
+    setPrinting(true);
+    try {
+      downloadEstimatePDF(estimate);
+    } finally {
+      setPrinting(false);
+    }
+  }
+
   if (!estimate) {
     return (
       <div className="py-12 text-center text-brand-muted">
@@ -61,6 +72,16 @@ export default function AdminEstimateDetail() {
           <h1 className="font-display text-2xl font-bold text-brand-navy">{estimate.estimateNumber}</h1>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrintEstimate}
+            disabled={printing}
+            title="Download A4 estimate PDF"
+            className="btn-primary !py-2 !px-4 text-sm flex items-center gap-2 disabled:opacity-60"
+          >
+            {printing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+            <span>{printing ? "Preparing..." : "Print Estimate"}</span>
+          </button>
           <span className="text-xs text-brand-muted font-medium">Status:</span>
           <select
             value={estimate.status}

@@ -626,3 +626,94 @@ export async function downloadPriceListPDF(options = {}) {
     if (onProgress) onProgress(false);
   }
 }
+
+export function downloadEstimatePDF(estimate) {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const customer = estimate?.customer || {};
+  const items = Array.isArray(estimate?.items) ? estimate.items : [];
+  const businessName = "Sri RR Crackers";
+  const margin = 12;
+  const labelColor = [90, 90, 90];
+  const textColor = [20, 20, 20];
+
+  doc.setTextColor(...textColor);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(businessName, margin, 17);
+  doc.setFontSize(13);
+  doc.text("ESTIMATE / DELIVERY SHEET", pageWidth - margin, 17, { align: "right" });
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(margin, 21, pageWidth - margin, 21);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(`Estimate No: ${estimate?.estimateNumber || "-"}`, margin, 27);
+  doc.text(`Date: ${estimate?.createdAt ? new Date(estimate.createdAt).toLocaleDateString("en-IN") : "-"}`, pageWidth - margin, 27, { align: "right" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("CUSTOMER DETAILS", margin, 37);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const customerDetails = [
+    [`Name: ${customer.name || "-"}`, `Mobile: ${customer.phone || "-"}`],
+    [`Additional Mobile: ${customer.alternatePhone || "-"}`, `Email: ${customer.email || "-"}`],
+    [`Address: ${[customer.address, customer.city, customer.state, customer.pincode].filter(Boolean).join(", ") || "-"}`],
+  ];
+  let customerY = 43;
+  customerDetails.forEach((row) => {
+    row.forEach((value, index) => {
+      doc.text(value, index === 0 ? margin : pageWidth / 2, customerY, { maxWidth: pageWidth / 2 - margin - 2 });
+    });
+    customerY += 5;
+  });
+
+  autoTable(doc, {
+    startY: customerY + 4,
+    margin: { left: margin, right: margin, bottom: 16 },
+    head: [["Product Code", "Product", "Qty", "Unit Price", "Line Total"]],
+    body: items.map((item) => [
+      item.productCode || "-",
+      `${item.productNameEn || "-"}${item.unit ? ` (${item.unit})` : ""}`,
+      String(item.quantity ?? "-"),
+      `Rs. ${Number(item.discountedUnitPrice ?? Math.round(Number(item.originalUnitPrice || 0) * 0.10)).toLocaleString("en-IN")}`,
+      `Rs. ${Number(item.lineTotal || 0).toLocaleString("en-IN")}`,
+    ]),
+    theme: "grid",
+    headStyles: { fillColor: [235, 235, 235], textColor, fontStyle: "bold", lineColor: [0, 0, 0], lineWidth: 0.2 },
+    styles: { font: "helvetica", fontSize: 8.5, textColor, lineColor: [120, 120, 120], lineWidth: 0.15, cellPadding: 2.2 },
+    columnStyles: {
+      0: { cellWidth: 27 },
+      1: { cellWidth: "auto" },
+      2: { cellWidth: 16, halign: "center" },
+      3: { cellWidth: 27, halign: "right" },
+      4: { cellWidth: 29, halign: "right" },
+    },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+  });
+
+  const summaryY = (doc.lastAutoTable?.finalY || customerY) + 8;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`Estimated Total: Rs. ${Number(estimate?.estimatedTotal || 0).toLocaleString("en-IN")}`, pageWidth - margin, summaryY, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...labelColor);
+  doc.text("Please verify item availability and final delivery details before dispatch.", margin, Math.min(summaryY + 10, pageHeight - 20));
+  doc.setTextColor(...textColor);
+
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let page = 1; page <= totalPages; page += 1) {
+    doc.setPage(page);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...labelColor);
+    doc.text(`Page ${page} of ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+  }
+
+  const fileName = String(estimate?.estimateNumber || "estimate").replace(/[^a-z0-9_-]/gi, "_");
+  doc.save(`${fileName}_delivery_sheet.pdf`);
+}

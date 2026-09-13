@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Receipt, Search, Loader2 } from "lucide-react";
+import { Receipt, Search, Loader2, Printer } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
+import { downloadEstimatePDF } from "../../utils/pdfGenerator";
 import Pagination from "../../components/common/Pagination";
 
 const statuses = ["", "NEW", "CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
@@ -20,6 +21,7 @@ export default function AdminEstimates() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [printingId, setPrintingId] = useState(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
 
@@ -39,6 +41,16 @@ export default function AdminEstimates() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, status]);
+
+  async function handlePrintEstimate(id) {
+    setPrintingId(id);
+    try {
+      const res = await AdminEstimateService.get(id);
+      downloadEstimatePDF(res.data);
+    } finally {
+      setPrintingId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -82,19 +94,20 @@ export default function AdminEstimates() {
                 <th className="py-3.5 px-4">Total</th>
                 <th className="py-3.5 px-4 text-center">Status</th>
                 <th className="py-3.5 px-4 text-right">Date</th>
+                <th className="py-3.5 px-4 text-right">Print</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-border/60">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-brand-muted">
+                  <td colSpan={7} className="py-12 text-center text-brand-muted">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
                     <span>Loading estimates...</span>
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-brand-muted">
+                  <td colSpan={7} className="py-12 text-center text-brand-muted">
                     <Receipt className="w-8 h-8 mx-auto mb-2 text-brand-border" />
                     <span>No estimates found.</span>
                   </td>
@@ -117,6 +130,18 @@ export default function AdminEstimates() {
                     </td>
                     <td className="py-3 px-4 text-right text-xs text-brand-muted">
                       {new Date(e.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handlePrintEstimate(e.id)}
+                        disabled={printingId === e.id}
+                        title="Download A4 estimate PDF"
+                        aria-label={`Print estimate ${e.estimateNumber}`}
+                        className="inline-flex items-center justify-center rounded-lg border border-brand-border p-2 text-brand-navy hover:border-brand-primary hover:text-brand-primary disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {printingId === e.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+                      </button>
                     </td>
                   </tr>
                 ))
