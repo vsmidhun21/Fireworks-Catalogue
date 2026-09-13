@@ -10,10 +10,27 @@ export const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
+  // Shared hosting MySQL (Hostinger) typically enforces a low wait_timeout.
+  // A smaller pool keeps each physical connection in frequent rotation so it
+  // stays "warm" and under the server's idle-timeout, instead of spreading
+  // traffic across many rarely-used connections that the server silently
+  // drops and mysql2 then has to re-establish (each re-establish counts
+  // against max_connections_per_hour).
+  connectionLimit: 5,
+  maxIdle: 5,
+  idleTimeout: 60000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
   queueLimit: 0,
   charset: "utf8mb4",
   decimalNumbers: true,
+});
+
+// Log unexpected pool-level connection errors instead of letting them
+// surface as unhandled events (which could otherwise crash the process and
+// force a full restart + fresh batch of new connections).
+pool.on("error", (err) => {
+  console.error("[mysql pool error]", err.code || err.message);
 });
 
 export const db = {
