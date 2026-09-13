@@ -7,11 +7,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://api.srirrcrackers.com/',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'https://api.srirrcrackers.com/',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },

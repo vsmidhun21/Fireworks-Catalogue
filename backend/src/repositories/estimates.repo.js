@@ -7,6 +7,7 @@ function rowToCustomer(r) {
     id: r.id,
     name: r.name,
     phone: r.phone || r.mobile,
+    alternatePhone: r.alternate_phone || null,
     email: r.email,
     address: r.address,
     city: r.city,
@@ -25,6 +26,7 @@ async function rowToEstimate(r) {
       id: r.customer_id,
       name: r.customer_name,
       phone: r.customer_phone,
+      alternatePhone: r.customer_alternate_phone || null,
       email: r.customer_email,
       address: r.customer_address,
       city: r.customer_city,
@@ -82,22 +84,23 @@ async function generateUniqueEstimateNumber({ maxAttempts = 10 } = {}) {
 export const CustomerRepo = {
   async create(c) {
     const phone = String(c.phone).trim();
+    const alternatePhone = c.alternatePhone ? String(c.alternatePhone).trim() : null;
     const existing = await db.prepare("SELECT id FROM customers WHERE phone = ? OR mobile = ?").get(phone, phone);
     if (existing) {
       await db
         .prepare(
           `UPDATE customers
-           SET name=?, email=?, address=?, city=?, state=?, pincode=?, phone=?, mobile=?, updated_at=?
+           SET name=?, email=?, address=?, city=?, state=?, pincode=?, phone=?, mobile=?, alternate_phone=?, updated_at=?
            WHERE id=?`
         )
-        .run(c.name, c.email || null, c.address, c.city, c.state, c.pincode, phone, phone, nowIso(), existing.id);
+        .run(c.name, c.email || null, c.address, c.city, c.state, c.pincode, phone, phone, alternatePhone, nowIso(), existing.id);
       const row = await db.prepare("SELECT * FROM customers WHERE id = ?").get(existing.id);
       return rowToCustomer(row);
     }
 
     const info = await db
-      .prepare(`INSERT INTO customers (name, phone, mobile, email, address, city, state, pincode, updated_at) VALUES (?,?,?,?,?,?,?,?,?)`)
-      .run(c.name, phone, phone, c.email || null, c.address, c.city, c.state, c.pincode, nowIso());
+      .prepare(`INSERT INTO customers (name, phone, mobile, alternate_phone, email, address, city, state, pincode, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+      .run(c.name, phone, phone, alternatePhone, c.email || null, c.address, c.city, c.state, c.pincode, nowIso());
     const row = await db.prepare("SELECT * FROM customers WHERE id = ?").get(Number(info.lastInsertRowid));
     return rowToCustomer(row);
   },
@@ -147,9 +150,9 @@ export const EstimateRepo = {
           const [info] = await conn.query(
             `INSERT INTO estimates
              (estimate_number, customer_id, subtotal, total_discount, estimated_total, customer_notes,
-              customer_name, customer_phone, customer_email, customer_address, customer_city, customer_state, customer_pincode,
+              customer_name, customer_phone, customer_alternate_phone, customer_email, customer_address, customer_city, customer_state, customer_pincode,
               updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
               estimateNumber,
               customerId,
@@ -159,6 +162,7 @@ export const EstimateRepo = {
               customerNotes || null,
               customerSnapshot.name,
               customerSnapshot.phone,
+              customerSnapshot.alternatePhone || null,
               customerSnapshot.email || null,
               customerSnapshot.address,
               customerSnapshot.city,

@@ -33,6 +33,9 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
     if (!/^[6-9]\d{9}$/.test(String(customer.phone).trim())) {
       validationErrors.push("phone must be a valid 10-digit mobile number");
     }
+    if (customer.alternatePhone && String(customer.alternatePhone).trim() !== "" && !/^[6-9]\d{9}$/.test(String(customer.alternatePhone).trim())) {
+      validationErrors.push("alternatePhone must be a valid 10-digit mobile number");
+    }
     if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(customer.email).trim())) {
       validationErrors.push("email must be valid");
     }
@@ -100,6 +103,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
     const dbCustomer = await CustomerRepo.create({
       name: customer.name,
       phone: customer.phone,
+      alternatePhone: customer.alternatePhone ? String(customer.alternatePhone).trim() : null,
       email: customer.email || null,
       address: customer.address,
       city: customer.city,
@@ -112,6 +116,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
       customerSnapshot: {
         name: customer.name,
         phone: customer.phone,
+        alternatePhone: customer.alternatePhone ? String(customer.alternatePhone).trim() : null,
         email: customer.email || null,
         address: customer.address,
         city: customer.city,

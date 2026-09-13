@@ -70,13 +70,22 @@ function escapeHtml(str) {
 export function generateEstimateAdminEmailHtml(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
-  const discountPct = 90;
+  const discountPct = computeDiscountPercent(estimate.subtotal, estimate.totalDiscount);
   const siteUrl = process.env.PUBLIC_SITE_URL || (process.env.CORS_ORIGINS || "http://localhost:5173").split(",")[0].trim();
   const adminEstimateUrl = estimate.id ? `${siteUrl}/admin/estimates/${estimate.id}` : null;
 
   const customerEmail = customer.email && String(customer.email).trim().length > 0
     ? escapeHtml(customer.email.trim())
     : '<span style="color: #94A3B8; font-style: italic;">Not provided</span>';
+
+  const alternatePhoneRow = customer.alternatePhone && String(customer.alternatePhone).trim().length > 0
+    ? `<tr>
+        <td style="padding: 6px 0; font-size: 13px; color: #64748B;"><strong>Additional Number:</strong></td>
+        <td style="padding: 6px 0; font-size: 14px; color: #0F172A; font-weight: 600;">
+          <a href="tel:${escapeHtml(customer.alternatePhone)}" style="color: #F97316; text-decoration: none; font-weight: 700;">${escapeHtml(customer.alternatePhone)}</a>
+        </td>
+       </tr>`
+    : "";
 
   const customerNotesRow = estimate.customerNotes
     ? `<tr>
@@ -201,6 +210,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
                       <a href="tel:${escapeHtml(customer.phone)}" style="color: #F97316; text-decoration: none; font-weight: 700;">${escapeHtml(customer.phone || "N/A")}</a>
                     </td>
                   </tr>
+                  ${alternatePhoneRow}
                   <tr>
                     <td style="padding: 6px 0; font-size: 13px; color: #64748B;"><strong>Email Address:</strong></td>
                     <td style="padding: 6px 0; font-size: 13px; color: #0F172A;">${customerEmail}</td>
@@ -338,9 +348,16 @@ export function generateEstimateAdminEmailText(estimate) {
     "-----------------------------------------------------------",
     `Name            : ${customer.name || "N/A"}`,
     `Phone / Mobile  : ${customer.phone || "N/A"}`,
-    `Email           : ${customer.email || "Not provided"}`,
-    `Address         : ${customer.address || ""}, ${customer.city || ""}, ${customer.state || ""} - ${customer.pincode || ""}`,
   ];
+
+  if (customer.alternatePhone) {
+    lines.push(`Additional No.  : ${customer.alternatePhone}`);
+  }
+
+  lines.push(
+    `Email           : ${customer.email || "Not provided"}`,
+    `Address         : ${customer.address || ""}, ${customer.city || ""}, ${customer.state || ""} - ${customer.pincode || ""}`
+  );
 
   if (estimate.customerNotes) {
     lines.push(`Customer Notes  : ${estimate.customerNotes}`);

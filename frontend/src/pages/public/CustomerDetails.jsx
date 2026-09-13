@@ -5,7 +5,7 @@ import { ArrowLeft, Send, Loader2, ShoppingCart } from "lucide-react";
 import { useEstimate } from "../../context/EstimateContext";
 import { EstimateService } from "../../services/api";
 
-const initialForm = { name: "", phone: "", email: "", address: "", city: "", state: "", pincode: "", notes: "" };
+const initialForm = { name: "", phone: "", alternatePhone: "", email: "", address: "", city: "", state: "", pincode: "", notes: "" };
 
 export default function CustomerDetails() {
   const { t } = useTranslation();
@@ -40,6 +40,7 @@ export default function CustomerDetails() {
     }
     if (form.name && !/^\p{L}[\p{L} .'-]{1,79}$/u.test(form.name.trim())) next.name = t("estimate.invalidName");
     if (form.phone && !/^[6-9]\d{9}$/.test(form.phone.trim())) next.phone = t("estimate.invalidPhone");
+    if (form.alternatePhone?.trim() && !/^[6-9]\d{9}$/.test(form.alternatePhone.trim())) next.alternatePhone = t("estimate.invalidAlternatePhone");
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) next.email = t("estimate.invalidEmail");
     if (form.city && !/^\p{L}[\p{L} .'-]{1,49}$/u.test(form.city.trim())) next.city = t("estimate.invalidCity");
     if (form.state && !/^\p{L}[\p{L} .'-]{1,49}$/u.test(form.state.trim())) next.state = t("estimate.invalidState");
@@ -76,6 +77,7 @@ export default function CustomerDetails() {
   const fields = [
     { key: "name", labelKey: "name", type: "text", full: true },
     { key: "phone", labelKey: "phone", type: "tel", inputMode: "numeric", maxLength: 10 },
+    { key: "alternatePhone", labelKey: "alternatePhone", type: "tel", inputMode: "numeric", maxLength: 10 },
     { key: "email", labelKey: "email", type: "email" },
     { key: "address", labelKey: "address", type: "text", full: true },
     { key: "city", labelKey: "city", type: "text", maxLength: 50 },
@@ -112,7 +114,7 @@ export default function CustomerDetails() {
         {fields.map((f) => (
           <div key={f.key} className={f.full ? "sm:col-span-2" : ""}>
             <label className="block text-sm font-semibold text-brand-navy mb-1.5" htmlFor={f.key}>
-              {t(`estimate.${f.labelKey}`)} {f.key !== "email" && <span className="text-brand-error">*</span>}
+              {t(`estimate.${f.labelKey}`)} {f.key !== "email" && f.key !== "alternatePhone" && <span className="text-brand-error">*</span>}
             </label>
             <input
               id={f.key}

@@ -40,6 +40,7 @@ export default function AdminCustomerDetail() {
         </div>
         <dl className="text-sm space-y-2.5">
           <div className="flex justify-between"><dt className="text-brand-muted">Phone Number</dt><dd className="font-medium text-brand-navy">{customer.phone}</dd></div>
+          {customer.alternatePhone && <div className="flex justify-between"><dt className="text-brand-muted">Additional Number</dt><dd className="font-medium text-brand-navy">{customer.alternatePhone}</dd></div>}
           {customer.email && <div className="flex justify-between"><dt className="text-brand-muted">Email Address</dt><dd className="font-medium text-brand-navy">{customer.email}</dd></div>}
           <div className="flex justify-between"><dt className="text-brand-muted">Address</dt><dd className="font-medium text-right text-brand-navy">{customer.address}</dd></div>
           <div className="flex justify-between"><dt className="text-brand-muted">City / State</dt><dd className="font-medium text-brand-navy">{customer.city}, {customer.state}</dd></div>

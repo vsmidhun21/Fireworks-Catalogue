@@ -85,6 +85,7 @@ export default function AdminEstimateDetail() {
           <dl className="text-sm space-y-2">
             <div className="flex justify-between"><dt className="text-brand-muted">Name</dt><dd className="font-medium text-brand-navy">{estimate.customer?.name}</dd></div>
             <div className="flex justify-between"><dt className="text-brand-muted">Phone</dt><dd className="font-medium text-brand-navy">{estimate.customer?.phone}</dd></div>
+            {estimate.customer?.alternatePhone && <div className="flex justify-between"><dt className="text-brand-muted">Additional Number</dt><dd className="font-medium text-brand-navy">{estimate.customer.alternatePhone}</dd></div>}
             {estimate.customer?.email && <div className="flex justify-between"><dt className="text-brand-muted">Email</dt><dd className="font-medium text-brand-navy">{estimate.customer.email}</dd></div>}
             <div className="flex justify-between"><dt className="text-brand-muted">City</dt><dd className="font-medium text-brand-navy">{estimate.customer?.city}</dd></div>
             <div className="flex justify-between"><dt className="text-brand-muted">State</dt><dd className="font-medium text-brand-navy">{estimate.customer?.state}</dd></div>
