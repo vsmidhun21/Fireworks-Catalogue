@@ -362,7 +362,7 @@ export async function downloadPriceListPDF(options = {}) {
 
     const [catRes, prodRes, settingsRes] = await Promise.all([
       CategoryService.list(),
-      ProductService.list({ limit: 1000 }),
+      ProductService.list(),
       SettingsService.public(),
     ]);
 
