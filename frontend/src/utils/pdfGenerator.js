@@ -60,6 +60,12 @@ function tint(rgb, amount) {
   return rgb.map((c) => Math.round(c + (255 - c) * amount));
 }
 
+function compareProductsByCode(a, b) {
+  const codeDifference = Number(a.productCode) - Number(b.productCode);
+  if (Number.isFinite(codeDifference) && codeDifference !== 0) return codeDifference;
+  return Number(a.id) - Number(b.id);
+}
+
 function getTamilCanvasContext(fontSize) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
@@ -380,10 +386,12 @@ export async function downloadPriceListPDF(options = {}) {
         category,
         items: products
           .filter((product) => product.categoryId === category.id)
-          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)),
+          .sort(compareProductsByCode),
       }));
 
-    const uncategorized = products.filter((product) => !categoryIds.has(product.categoryId));
+    const uncategorized = products
+      .filter((product) => !categoryIds.has(product.categoryId))
+      .sort(compareProductsByCode);
     if (uncategorized.length) {
       groupedCategories.push({
         category: { nameEn: "Other Products", nameTa: "" },
