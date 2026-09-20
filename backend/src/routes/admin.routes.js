@@ -188,18 +188,18 @@ router.delete("/categories/:id", async (req, res, next) => {
 // ---------- Products ----------
 router.get("/products", async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, search, category } = req.query;
-    const take = Math.min(parseInt(limit, 10) || 10, 100);
+    const { page = 1, limit = 200, search, category, categoryId, sort = "category" } = req.query;
+    const take = Math.min(parseInt(limit, 10) || 200, 2000);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-    let categorySlug;
-    if (category) {
-      const cat = await CategoryRepo.findById(Number(category));
-      categorySlug = cat?.slug;
-    }
+    const targetCategoryId = categoryId || (category && !isNaN(Number(category)) ? Number(category) : undefined);
+    const categorySlug = (!targetCategoryId && category) ? category : undefined;
+
     const { items, total } = await ProductRepo.list({
       activeOnly: false,
+      categoryId: targetCategoryId,
       categorySlug,
       search,
+      sort,
       limit: take,
       offset: (currentPage - 1) * take,
     });

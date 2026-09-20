@@ -44,13 +44,16 @@ function validateProductCode(productCode) {
 }
 
 export const ProductRepo = {
-  async list({ activeOnly = true, categorySlug, search, featured, sort, limit, offset = 0 } = {}) {
+  async list({ activeOnly = true, categoryId, categorySlug, search, featured, sort, limit, offset = 0 } = {}) {
     const clauses = [];
     const params = [];
     let joinCategory = false;
 
     if (activeOnly) clauses.push("p.is_active = 1");
-    if (categorySlug) {
+    if (categoryId) {
+      clauses.push("p.category_id = ?");
+      params.push(Number(categoryId));
+    } else if (categorySlug) {
       joinCategory = true;
       clauses.push("c.slug = ?");
       params.push(categorySlug);
@@ -61,13 +64,26 @@ export const ProductRepo = {
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    let orderBy = "p.sort_order ASC";
-    if (sort === "price_asc") orderBy = "p.original_price ASC";
-    if (sort === "price_desc") orderBy = "p.original_price DESC";
-    if (sort === "newest") orderBy = "p.created_at DESC";
+    let orderBy = "p.sort_order ASC, CAST(p.product_code AS UNSIGNED) ASC, p.id ASC";
+    if (sort === "category") {
+      joinCategory = true;
+      orderBy = "COALESCE(c.sort_order, 0) ASC, c.id ASC, p.sort_order ASC, CAST(p.product_code AS UNSIGNED) ASC, p.id ASC";
+    } else if (sort === "code_asc") {
+      orderBy = "CAST(p.product_code AS UNSIGNED) ASC, p.product_code ASC";
+    } else if (sort === "name_asc") {
+      orderBy = "p.name_en ASC";
+    } else if (sort === "price_asc") {
+      orderBy = "p.original_price ASC";
+    } else if (sort === "price_desc") {
+      orderBy = "p.original_price DESC";
+    } else if (sort === "newest") {
+      orderBy = "p.created_at DESC";
+    } else if (sort === "product_sort") {
+      orderBy = "p.sort_order ASC, CAST(p.product_code AS UNSIGNED) ASC, p.id ASC";
+    }
 
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-    const join = joinCategory ? "JOIN categories c ON c.id = p.category_id" : "";
+    const join = joinCategory ? "LEFT JOIN categories c ON c.id = p.category_id" : "";
 
     const countSql = `SELECT COUNT(*) as c FROM products p ${join} ${where}`;
     const countRow = await db.prepare(countSql).get(...params);
