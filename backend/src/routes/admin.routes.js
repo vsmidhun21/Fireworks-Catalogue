@@ -5,7 +5,8 @@ import { CustomerRepo, EstimateRepo, SettingsRepo } from "../repositories/estima
 import { PromotionRepo } from "../repositories/promotions.repo.js";
 import { GiftBoxRepo } from "../repositories/giftBoxes.repo.js";
 import { ok, fail, slugify } from "../utils/response.js";
-import { GLOBAL_DISCOUNT_SETTING_KEY, parseDiscountPercent } from "../utils/pricing.js";
+import { GLOBAL_DISCOUNT_SETTING_KEY, parseDiscountPercent, calcDiscountedPrice } from "../utils/pricing.js";
+import { validateCustomerInput, normalizeCustomerInput } from "../utils/customerValidation.js";
 import { requireAdmin } from "../middleware/auth.js";
 import {
   uploadProductImage,
@@ -323,6 +324,83 @@ router.get("/estimates", async (req, res, next) => {
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const { items, total } = await EstimateRepo.list({ status, search, limit: take, offset: (currentPage - 1) * take });
     ok(res, { items, total, page: currentPage, limit: take });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Manual estimate created by an admin. The discount % is chosen per estimate and
+// stored on it; prices are always computed server-side from the products' original
+// prices (client-sent prices are ignored) and snapshotted into estimate_items.
+router.post("/estimates", async (req, res, next) => {
+  try {
+    const { customer, items, discountPercent } = req.body || {};
+
+    const discount = parseDiscountPercent(discountPercent);
+    if (discount === null) {
+      return fail(res, "Discount percentage must be a number between 0 and 100 (max 2 decimals)", 422, ["discountPercent is invalid"]);
+    }
+    const customerErrors = validateCustomerInput(customer);
+    if (customerErrors.length) return fail(res, "Please provide valid customer details", 422, customerErrors);
+    if (!Array.isArray(items) || items.length === 0) return fail(res, "At least one product is required", 422, ["items is empty"]);
+    if (items.length > 500) return fail(res, "Too many items", 422, ["items exceeds 500"]);
+
+    // Validate quantities strictly and merge duplicate products.
+    const qtyByProduct = new Map();
+    for (const it of items) {
+      const productId = Number(it?.productId);
+      const quantity = Number(it?.quantity);
+      if (!Number.isInteger(productId) || productId <= 0) return fail(res, "Invalid product in items", 422, ["productId is invalid"]);
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99999) {
+        return fail(res, "Quantity must be a whole number between 1 and 99999", 422, [`quantity invalid for product ${productId}`]);
+      }
+      qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + quantity);
+    }
+
+    const dbProducts = await ProductRepo.findManyByIds([...qtyByProduct.keys()]);
+    const productMap = new Map(dbProducts.map((p) => [p.id, p]));
+    const round2 = (n) => Math.round(n * 100) / 100;
+
+    let subtotal = 0;
+    let estimatedTotal = 0;
+    const preparedItems = [];
+    for (const [productId, quantity] of qtyByProduct) {
+      const product = productMap.get(productId);
+      if (!product) return fail(res, `Product ${productId} is unavailable or inactive`, 422);
+      const unitOriginal = product.originalPrice;
+      const unitDiscounted = calcDiscountedPrice(unitOriginal, discount);
+      const lineTotal = round2(unitDiscounted * quantity);
+      subtotal += unitOriginal * quantity;
+      estimatedTotal += lineTotal;
+      preparedItems.push({
+        productId: product.id,
+        productCode: product.productCode,
+        productNameEn: product.nameEn,
+        productNameTa: product.nameTa,
+        unit: product.unit,
+        quantity,
+        originalUnitPrice: unitOriginal,
+        discountedUnitPrice: unitDiscounted,
+        lineTotal,
+      });
+    }
+    subtotal = round2(subtotal);
+    estimatedTotal = round2(estimatedTotal);
+
+    const c = normalizeCustomerInput(customer);
+    const dbCustomer = await CustomerRepo.create(c);
+    const created = await EstimateRepo.createWithItems({
+      customerId: dbCustomer.id,
+      customerSnapshot: c,
+      subtotal,
+      totalDiscount: round2(subtotal - estimatedTotal),
+      estimatedTotal,
+      customerNotes: null,
+      items: preparedItems,
+      discountPercent: discount,
+      source: "MANUAL",
+    });
+    ok(res, created, "Manual estimate created", 201);
   } catch (e) {
     next(e);
   }

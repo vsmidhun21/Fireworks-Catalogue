@@ -715,7 +715,17 @@ export function downloadEstimatePDF(estimate) {
     alternateRowStyles: { fillColor: [250, 250, 250] },
   });
 
-  const summaryY = (doc.lastAutoTable?.finalY || customerY) + 8;
+  let summaryY = (doc.lastAutoTable?.finalY || customerY) + 8;
+  // Manual estimates carry their own saved discount %; show it (never the live global setting).
+  // Legacy/customer estimates have no saved %, so their PDF stays exactly as before.
+  if (estimate?.discountPercent != null) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`MRP Subtotal: Rs. ${Number(estimate.subtotal || 0).toLocaleString("en-IN")}`, pageWidth - margin, summaryY, { align: "right" });
+    summaryY += 5;
+    doc.text(`Discount (${formatPercent(estimate.discountPercent)}%): - Rs. ${Number(estimate.totalDiscount || 0).toLocaleString("en-IN")}`, pageWidth - margin, summaryY, { align: "right" });
+    summaryY += 6;
+  }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.text(`Estimated Total: Rs. ${Number(estimate?.estimatedTotal || 0).toLocaleString("en-IN")}`, pageWidth - margin, summaryY, { align: "right" });

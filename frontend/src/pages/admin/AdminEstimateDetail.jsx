@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, User, Receipt, Loader2, Save, Printer } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
-import { formatCurrency, historicalUnitPrice, totalsDiscountPercent } from "../../utils/format";
+import { formatCurrency, historicalUnitPrice, estimateDiscountPercent, formatPercent } from "../../utils/format";
 import { downloadEstimatePDF } from "../../utils/pdfGenerator";
 
 const statuses = ["NEW", "CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
@@ -69,7 +69,14 @@ export default function AdminEstimateDetail() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <span className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Estimate Number</span>
-          <h1 className="font-display text-2xl font-bold text-brand-navy">{estimate.estimateNumber}</h1>
+          <h1 className="font-display text-2xl font-bold text-brand-navy">
+            {estimate.estimateNumber}
+            {estimate.isManual && (
+              <span className="ml-3 align-middle inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-slate-100 text-slate-600 border-slate-200">
+                Manual
+              </span>
+            )}
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -125,13 +132,19 @@ export default function AdminEstimateDetail() {
           </div>
           <dl className="text-sm space-y-2">
             <div className="flex justify-between"><dt className="text-brand-muted">Retail Subtotal (MRP)</dt><dd className="font-medium">{formatCurrency(estimate.subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-brand-muted">Festive Discount ({totalsDiscountPercent(estimate.subtotal, estimate.totalDiscount)}%)</dt><dd className="text-emerald-600 font-bold">-{formatCurrency(estimate.totalDiscount)}</dd></div>
+            <div className="flex justify-between"><dt className="text-brand-muted">Festive Discount ({formatPercent(estimateDiscountPercent(estimate))}%)</dt><dd className="text-emerald-600 font-bold">-{formatCurrency(estimate.totalDiscount)}</dd></div>
             <div className="flex justify-between font-bold text-brand-navy text-base border-t border-brand-border pt-2 mt-1">
               <dt>Estimated Total</dt><dd className="text-brand-primary-dark">{formatCurrency(estimate.estimatedTotal)}</dd>
             </div>
-            <div className="flex justify-between text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 mt-2 font-medium">
-              <span>Order Condition</span><span>✓ Min. order ₹3,000 met</span>
-            </div>
+            {estimate.isManual ? (
+              <div className="flex justify-between text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 mt-2 font-medium">
+                <span>Created manually by admin</span><span>Min. order not enforced</span>
+              </div>
+            ) : (
+              <div className="flex justify-between text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 mt-2 font-medium">
+                <span>Order Condition</span><span>✓ Min. order ₹3,000 met</span>
+              </div>
+            )}
             <div className="flex justify-between text-xs text-brand-muted pt-2 border-t border-brand-border">
               <dt>Submitted Date</dt><dd>{new Date(estimate.createdAt).toLocaleString()}</dd>
             </div>

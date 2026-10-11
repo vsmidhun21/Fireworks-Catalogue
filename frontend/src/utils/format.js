@@ -78,3 +78,13 @@ export function whatsappLink(number, message = "") {
   const text = encodeURIComponent(message);
   return `https://wa.me/${clean}${text ? `?text=${text}` : ""}`;
 }
+
+/**
+ * Discount % to display for a stored estimate: the percentage saved on the estimate
+ * itself (manual estimates), else the blended % derived from its frozen totals
+ * (legacy / customer-submitted). Never the current global setting.
+ */
+export function estimateDiscountPercent(estimate) {
+  if (estimate?.discountPercent != null) return Number(estimate.discountPercent);
+  return totalsDiscountPercent(estimate?.subtotal, estimate?.totalDiscount);
+}
