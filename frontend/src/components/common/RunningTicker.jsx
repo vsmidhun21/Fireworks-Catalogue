@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Flame, FileDown } from "lucide-react";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 import { useSettings } from "../../context/SettingsContext";
+import { globalDiscountPercent, formatPercent } from "../../utils/format";
 
 export default function RunningTicker() {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const [downloading, setDownloading] = useState(false);
+  const discountPct = formatPercent(globalDiscountPercent(settings));
 
   const handleDownload = async (e) => {
     e.preventDefault();
@@ -23,9 +25,9 @@ export default function RunningTicker() {
 
   const defaultItems = [
     {
-      badge: t("ticker.item1Badge"),
+      badge: t("ticker.item1Badge", { pct: discountPct }),
       badgeStyle: { backgroundColor: "#fbbf24", color: "#020617" },
-      text: t("ticker.item1Text"),
+      text: t("ticker.item1Text", { pct: discountPct }),
     },
     {
       badge: t("ticker.item2Badge"),

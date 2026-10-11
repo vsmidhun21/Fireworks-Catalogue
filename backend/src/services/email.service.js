@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { blendedDiscountPercent } from "../utils/pricing.js";
 
 /**
  * Creates and returns a Nodemailer transporter configured for Gmail SMTP.
@@ -70,7 +71,7 @@ function escapeHtml(str) {
 export function generateEstimateAdminEmailHtml(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
-  const discountPct = 90;
+  const discountPct = estimate.discountPercent ?? blendedDiscountPercent(estimate.subtotal, estimate.totalDiscount);
   const siteUrl = process.env.PUBLIC_SITE_URL || (process.env.CORS_ORIGINS || "http://localhost:5173").split(",")[0].trim();
   const adminEstimateUrl = estimate.id ? `${siteUrl}/admin/estimates/${estimate.id}` : null;
 
@@ -331,7 +332,7 @@ export function generateEstimateAdminEmailHtml(estimate) {
 export function generateEstimateAdminEmailText(estimate) {
   const customer = estimate.customer || {};
   const items = Array.isArray(estimate.items) ? estimate.items : [];
-  const discountPct = 90;
+  const discountPct = estimate.discountPercent ?? blendedDiscountPercent(estimate.subtotal, estimate.totalDiscount);
 
   const lines = [
     "===========================================================",

@@ -170,6 +170,7 @@ function toProductFormData(data) {
 export const AdminEstimateService = {
   list: (params) => api.get("/admin/estimates", { params }),
   get: (id) => api.get(`/admin/estimates/${id}`),
+  create: (payload) => api.post("/admin/estimates", payload),
   setStatus: (id, status) => api.patch(`/admin/estimates/${id}/status`, { status }),
   setNotes: (id, adminNotes) => api.patch(`/admin/estimates/${id}/notes`, { adminNotes }),
 };

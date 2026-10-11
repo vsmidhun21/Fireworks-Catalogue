@@ -25,6 +25,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminEstimates from "./pages/admin/AdminEstimates";
 import AdminEstimateDetail from "./pages/admin/AdminEstimateDetail";
+import AdminEstimateCreate from "./pages/admin/AdminEstimateCreate";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -78,6 +79,7 @@ export default function App() {
         <Route path="products" element={<AdminProducts />} />
         <Route path="categories" element={<AdminCategories />} />
         <Route path="estimates" element={<AdminEstimates />} />
+        <Route path="estimates/new" element={<AdminEstimateCreate />} />
         <Route path="estimates/:id" element={<AdminEstimateDetail />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="customers/:id" element={<AdminCustomerDetail />} />

@@ -15,9 +15,11 @@ import {
   PhoneCall,
   Eye,
   EyeOff,
+  Percent,
 } from "lucide-react";
 import { AdminSettingsService } from "../../services/api";
-import { useSettings, DEFAULT_TICKER_ITEMS } from "../../context/SettingsContext";
+import { useSettings, buildDefaultTickerItems } from "../../context/SettingsContext";
+import { globalDiscountPercent } from "../../utils/format";
 import { applyTheme, DEFAULT_THEME } from "../../utils/theme";
 
 const contactFields = [
@@ -61,6 +63,7 @@ export default function AdminSettings() {
   const [saved, setSaved] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
+  const [discountError, setDiscountError] = useState("");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -74,22 +77,44 @@ export default function AdminSettings() {
             tickerItems = null;
           }
         }
+        const discountPct = globalDiscountPercent(res.data);
         if (!Array.isArray(tickerItems) || tickerItems.length === 0) {
-          tickerItems = DEFAULT_TICKER_ITEMS;
+          tickerItems = buildDefaultTickerItems(discountPct);
         }
-        setForm({ ...DEFAULT_THEME, ...(res.data || {}), header_ticker_items: tickerItems });
+        setForm({
+          ...DEFAULT_THEME,
+          ...(res.data || {}),
+          global_discount_percent: String(discountPct),
+          header_ticker_items: tickerItems,
+        });
       })
       .finally(() => setLoading(false));
   }, []);
 
   async function handleSave(e) {
     e.preventDefault();
-    setSaving(true);
     setSaved(false);
+    setDiscountError("");
+    const rawDiscount = String(form.global_discount_percent ?? "").trim();
+    const discountValue = Number(rawDiscount);
+    if (
+      rawDiscount === "" ||
+      !Number.isFinite(discountValue) ||
+      discountValue < 0 ||
+      discountValue > 100 ||
+      Math.abs(Math.round(discountValue * 100) / 100 - discountValue) > 1e-9
+    ) {
+      setDiscountError("Enter a number between 0 and 100 (up to 2 decimal places).");
+      return;
+    }
+    setSaving(true);
     try {
-      const res = await AdminSettingsService.update(form);
-      updateSettings(res?.data || form);
+      const res = await AdminSettingsService.update({ ...form, global_discount_percent: discountValue });
+      updateSettings(res?.data || { ...form, global_discount_percent: discountValue });
+      setForm((f) => ({ ...f, global_discount_percent: String(discountValue) }));
       setSaved(true);
+    } catch (err) {
+      setDiscountError(err?.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -174,7 +199,7 @@ export default function AdminSettings() {
     if (window.confirm("Reset all header scrolling items to default festive offers?")) {
       setForm((f) => ({
         ...f,
-        header_ticker_items: DEFAULT_TICKER_ITEMS,
+        header_ticker_items: buildDefaultTickerItems(globalDiscountPercent(f)),
       }));
     }
   }
@@ -304,6 +329,37 @@ export default function AdminSettings() {
           {/* <p className="text-xs text-brand-muted mt-3">
             Color changes preview live across the site as you pick them. Click "Save Settings" below to
             make them permanent.
+          </p> */}
+        </div>
+      </div>
+
+      {/* ---------- GLOBAL DISCOUNT ---------- */}
+      <div className="card-surface rounded-2xl border border-brand-border/80 p-4 sm:p-6 md:p-8 space-y-4 overflow-hidden">
+        <div className="flex items-center gap-2">
+          <Percent className="w-5 h-5 text-brand-primary shrink-0" />
+          <h2 className="font-display text-lg font-bold text-brand-navy">Global Discount</h2>
+        </div>
+        <div className="max-w-xs">
+          <label className="block text-sm font-semibold text-brand-navy mb-1" htmlFor="global_discount_percent">
+            Discount Percentage (%)
+          </label>
+          <input
+            id="global_discount_percent"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={form.global_discount_percent ?? ""}
+            onChange={(e) => {
+              setDiscountError("");
+              setForm({ ...form, global_discount_percent: e.target.value });
+            }}
+            className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+          />
+          {discountError && <p className="mt-1 text-xs text-red-600">{discountError}</p>}
+          {/* <p className="mt-1 text-xs text-brand-muted">
+            Offer price = original price × (1 − discount ÷ 100). Applies to all products and new estimates. Existing
+            estimates are not changed.
           </p> */}
         </div>
       </div>
@@ -479,7 +535,7 @@ export default function AdminSettings() {
                   <input
                     type="text"
                     value={item.message_text || ""}
-                    placeholder="e.g. Special festive discounts live now! Up to 90% off retail prices."
+                    placeholder="e.g. Special festive discounts live now!"
                     onChange={(e) => handleUpdateTickerItem(index, "message_text", e.target.value)}
                     className="w-full rounded-xl border border-brand-border px-3 py-2 text-xs focus:outline-none focus:border-brand-primary"
                   />

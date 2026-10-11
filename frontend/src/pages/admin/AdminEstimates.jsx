@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Receipt, Search, Loader2, Printer } from "lucide-react";
+import { Receipt, Search, Loader2, Printer, Plus } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
 import { formatCurrency } from "../../utils/format";
 import { downloadEstimatePDF } from "../../utils/pdfGenerator";
@@ -60,6 +60,10 @@ export default function AdminEstimates() {
           <p className="text-sm text-brand-muted">Track customer orders, follow up, and update statuses</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Link to="/admin/estimates/new" className="btn-primary !py-2 !px-4 text-sm flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            <span>Create Manual Estimate</span>
+          </Link>
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
             <input
@@ -119,6 +123,11 @@ export default function AdminEstimates() {
                       <Link to={`/admin/estimates/${e.id}`} className="text-brand-primary hover:underline font-semibold">
                         {e.estimateNumber}
                       </Link>
+                      {e.isManual && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-slate-100 text-slate-600 border-slate-200 align-middle">
+                          Manual
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 font-medium text-brand-navy">{e.customer?.name}</td>
                     <td className="py-3 px-4 text-brand-muted">{e.customer?.phone}</td>

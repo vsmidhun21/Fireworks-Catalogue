@@ -17,7 +17,8 @@ import {
   FileDown,
 } from "lucide-react";
 import { AdminProductService, AdminCategoryService } from "../../services/api";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, calcDiscountedPrice, globalDiscountPercent, formatPercent } from "../../utils/format";
+import { useSettings } from "../../context/SettingsContext";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 import Pagination from "../../components/common/Pagination";
@@ -30,7 +31,6 @@ const emptyForm = {
   descriptionTa: "",
   unit: "Box",
   originalPrice: "",
-  discountedPrice: "",
   imageUrl: "",
   imageFile: null,
   isFeatured: false,
@@ -39,6 +39,8 @@ const emptyForm = {
 };
 
 export default function AdminProducts() {
+  const { settings } = useSettings();
+  const discountPct = globalDiscountPercent(settings);
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -53,6 +55,28 @@ export default function AdminProducts() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfDiscountInput, setPdfDiscountInput] = useState("");
+  const [pdfDiscountError, setPdfDiscountError] = useState("");
+
+  function openPdfModal() {
+    // Pre-fill with the currently saved global discount; edits here are for this download only.
+    setPdfDiscountInput(String(discountPct));
+    setPdfDiscountError("");
+    setPdfModalOpen(true);
+  }
+
+  function handlePdfDownload() {
+    const raw = String(pdfDiscountInput).trim();
+    const value = Number(raw);
+    if (raw === "" || !Number.isFinite(value) || value < 0 || value > 100) {
+      setPdfDiscountError("Enter a number between 0 and 100.");
+      return;
+    }
+    setPdfModalOpen(false);
+    setDownloadingPdf(true);
+    downloadPriceListPDF({ discountPercent: value }).finally(() => setDownloadingPdf(false));
+  }
   const [error, setError] = useState("");
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const fileInputRef = useRef(null);
@@ -236,7 +260,6 @@ export default function AdminProducts() {
       descriptionTa: p.descriptionTa || "",
       unit: p.unit,
       originalPrice: p.originalPrice,
-      discountedPrice: p.discountedPrice ?? "",
       imageUrl: p.imageUrl || "",
       imageFile: null,
       isFeatured: p.isFeatured,
@@ -338,12 +361,58 @@ export default function AdminProducts() {
               Manage product catalogue, image uploads, and inventory ({total} total products)
             </p>
           </div>
+          {pdfModalOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setPdfModalOpen(false)}
+            >
+              <div
+                className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="font-display text-lg font-bold text-brand-navy">Price List PDF Discount</h2>
+                <p className="mt-1 text-sm text-brand-muted">
+                  Discount percentage to use for this PDF only. Saved settings are not changed.
+                </p>
+                <label className="mt-4 block text-sm font-semibold text-brand-navy mb-1" htmlFor="pdf_discount_percent">
+                  Discount Percentage (%)
+                </label>
+                <input
+                  id="pdf_discount_percent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  autoFocus
+                  value={pdfDiscountInput}
+                  onChange={(e) => {
+                    setPdfDiscountInput(e.target.value);
+                    setPdfDiscountError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handlePdfDownload()}
+                  className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+                />
+                {pdfDiscountError && <p className="mt-1 text-xs text-red-600">{pdfDiscountError}</p>}
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPdfModalOpen(false)}
+                    className="rounded-full border border-brand-border px-4 py-2 text-sm font-semibold text-brand-navy hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handlePdfDownload} className="btn-primary !py-2 !px-5 text-sm">
+                    Download
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2.5">
             <button
-              onClick={() => {
-                setDownloadingPdf(true);
-                downloadPriceListPDF().finally(() => setDownloadingPdf(false));
-              }}
+              onClick={openPdfModal}
               disabled={downloadingPdf}
               className="rounded-full border border-amber-400 bg-amber-50 text-amber-900 px-4 py-2 text-sm font-bold hover:bg-amber-100 transition-colors flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-60"
               title="Download latest price list PDF"
@@ -605,28 +674,26 @@ export default function AdminProducts() {
               step="0.01"
               placeholder="e.g. 150"
               value={form.originalPrice}
-              onChange={(e) => {
-                const val = e.target.value;
-                const num = parseFloat(val);
-                const autoDiscount = !isNaN(num) && num > 0 ? String(Math.round(num * 0.10)) : "";
-                setForm({ ...form, originalPrice: val, discountedPrice: autoDiscount });
-              }}
+              onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
               className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
             />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">
-              Offer Price / 90% Off (Rs.)
-              <span className="text-xs text-emerald-600 font-normal ml-1">(90% discount)</span>
+              Offer Price / {formatPercent(discountPct)}% Off (Rs.)
+              <span className="text-xs text-emerald-600 font-normal ml-1">(global discount, set in Settings)</span>
             </label>
             <input
-              type="number"
-              step="0.01"
-              placeholder="e.g. 15 (auto 90% off)"
-              value={form.discountedPrice}
-              onChange={(e) => setForm({ ...form, discountedPrice: e.target.value })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+              type="text"
+              readOnly
+              tabIndex={-1}
+              value={
+                form.originalPrice !== "" && !isNaN(parseFloat(form.originalPrice))
+                  ? String(calcDiscountedPrice(parseFloat(form.originalPrice), discountPct))
+                  : ""
+              }
+              className="w-full rounded-lg border border-brand-border bg-slate-50 px-3 py-2 text-sm text-brand-muted cursor-not-allowed"
             />
           </div>
 
@@ -867,7 +934,7 @@ export default function AdminProducts() {
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <div className="font-semibold text-brand-navy">
-                            {formatCurrency(p.discountedPrice != null ? p.discountedPrice : Math.round(p.originalPrice * 0.10))}
+                            {formatCurrency(p.discountedPrice)}
                           </div>
                           <div className="text-xs text-brand-muted line-through">
                             {formatCurrency(p.originalPrice)}

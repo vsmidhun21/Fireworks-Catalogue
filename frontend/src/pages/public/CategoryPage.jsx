@@ -5,7 +5,8 @@ import { Search, ShoppingBag } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
-import { catalogueDiscountSummary } from "../../utils/format";
+import { catalogueDiscountSummary, formatPercent } from "../../utils/format";
+import { useSettings } from "../../context/SettingsContext";
 
 const SKELETON_COUNT = 10;
 const EXPLORE_MORE_LIMIT = 8;
@@ -13,6 +14,7 @@ const EXPLORE_MORE_LIMIT = 8;
 export default function CategoryPage() {
   const { slug } = useParams();
   const { t, i18n } = useTranslation();
+  const { settings } = useSettings();
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function CategoryPage() {
     );
   }
 
-  const discountSummary = catalogueDiscountSummary(products);
+  const discountSummary = catalogueDiscountSummary(products, settings.global_discount_percent);
 
   return (
     <div className="container-page py-8 sm:py-12">
@@ -96,8 +98,8 @@ export default function CategoryPage() {
           <div className="mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-300/80 flex items-center justify-between gap-3 text-xs sm:text-sm">
             <span className="font-semibold text-brand-navy">
               🎉 {discountSummary.uniform
-                ? `Flat ${discountSummary.pct}% Discount Always Applicable on All Products!`
-                : `Up to ${discountSummary.pct}% Discount Applicable on Products in This Category!`}
+                ? `Flat ${formatPercent(discountSummary.pct)}% Discount Always Applicable on All Products!`
+                : `Up to ${formatPercent(discountSummary.pct)}% Discount Applicable on Products in This Category!`}
             </span>
             <span className="font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full shrink-0">
               Min. Order ₹3,000

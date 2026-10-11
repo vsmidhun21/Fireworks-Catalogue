@@ -1,10 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useSettings } from "./SettingsContext";
+import { calcDiscountedPrice, globalDiscountPercent } from "../utils/format";
 
 const EstimateContext = createContext(null);
 const STORAGE_KEY = "rr_estimate_items";
 
 export function EstimateProvider({ children }) {
-  const [items, setItems] = useState(() => {
+  const { settings } = useSettings();
+  const discountPct = globalDiscountPercent(settings);
+  const [storedItems, setItems] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : [];
@@ -14,17 +18,24 @@ export function EstimateProvider({ children }) {
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storedItems));
+  }, [storedItems]);
+
+  // Unit offer prices are always derived from the original price and the
+  // current global discount, so a changed setting never leaves stale cart prices.
+  const items = useMemo(
+    () => storedItems.map((i) => ({ ...i, discountedPrice: calcDiscountedPrice(i.originalPrice, discountPct) })),
+    [storedItems, discountPct]
+  );
 
   const MIN_ORDER_AMOUNT = 3000;
 
   function addItem(product, quantity = 1) {
     setItems((prev) => {
-      const unitDiscounted = product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
+      const unitDiscounted = calcDiscountedPrice(product.originalPrice, discountPct);
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
-        return prev.map((i) => (i.productId === product.id ? { ...i, quantity: i.quantity + quantity, discountedPrice: unitDiscounted } : i));
+        return prev.map((i) => (i.productId === product.id ? { ...i, quantity: i.quantity + quantity, originalPrice: product.originalPrice, discountedPrice: unitDiscounted } : i));
       }
       return [
         ...prev,
@@ -59,12 +70,9 @@ export function EstimateProvider({ children }) {
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, i) => sum + i.originalPrice * i.quantity, 0);
-    const estimatedTotal = items.reduce(
-      (sum, i) => sum + (i.discountedPrice != null ? i.discountedPrice : Math.round(i.originalPrice * 0.10)) * i.quantity,
-      0
-    );
-    // Fixed 90% off site-wide discount
-    const discountPercent = 90;
+    const estimatedTotal = items.reduce((sum, i) => sum + i.discountedPrice * i.quantity, 0);
+    // Admin-configured global discount (Admin Settings)
+    const discountPercent = discountPct;
     const discount = subtotal - estimatedTotal;
     const isMinOrderMet = estimatedTotal >= MIN_ORDER_AMOUNT;
     const amountNeededForMinOrder = Math.max(0, MIN_ORDER_AMOUNT - estimatedTotal);
@@ -79,7 +87,7 @@ export function EstimateProvider({ children }) {
       isMinOrderMet,
       amountNeededForMinOrder,
     };
-  }, [items]);
+  }, [items, discountPct]);
 
   return (
     <EstimateContext.Provider value={{ items, addItem, updateQuantity, removeItem, clear, totals, MIN_ORDER_AMOUNT }}>

@@ -14,7 +14,7 @@ import BrandStory from "../../components/common/BrandStory";
 import WhyChooseUs from "../../components/common/WhyChooseUs";
 import SEO from "../../components/common/SEO";
 import { useSettings } from "../../context/SettingsContext";
-import { whatsappLink } from "../../utils/format";
+import { whatsappLink, globalDiscountPercent, formatPercent } from "../../utils/format";
 
 /**
  * Full-hero Interactive Fireworks Canvas
@@ -137,6 +137,7 @@ function FireworksCanvas() {
 export default function Home() {
   const { t, i18n } = useTranslation();
   const { settings } = useSettings();
+  const discountPct = formatPercent(globalDiscountPercent(settings));
   const businessName = settings.business_name || "Sri RR Crackers";
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
@@ -198,7 +199,7 @@ export default function Home() {
               </span>
               <span className="inline-flex items-center gap-1 bg-emerald-500/25 border border-emerald-400/50 text-emerald-300 text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
                 <Percent className="w-3.5 h-3.5" />
-                {t("home.discountBadge")}
+                {t("home.discountBadge", { pct: discountPct })}
               </span>
               <span className="inline-flex items-center gap-1 bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
                 {t("home.minOrderBadge")}
@@ -276,7 +277,7 @@ export default function Home() {
         </svg>
       </section>
 
-      {/* ── 90% MEGA DISCOUNT & MINIMUM ORDER FESTIVE SHOWCASE ── */}
+      {/* ── GLOBAL DISCOUNT & MINIMUM ORDER FESTIVE SHOWCASE ── */}
       <section className="container-page py-6 sm:py-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-600 via-rose-600 to-violet-800 text-white p-6 sm:p-10 shadow-xl">
           <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
@@ -286,10 +287,10 @@ export default function Home() {
                 LIMITED FESTIVE WHOLESALE OFFER
               </span>
               <h2 className="font-display text-2xl sm:text-4xl font-extrabold leading-tight mb-2">
-                Flat 90% Discount on All Sivakasi Fireworks!
+                Flat {discountPct}% Discount on All Sivakasi Fireworks!
               </h2>
               <p className="text-amber-100 text-sm sm:text-base leading-relaxed">
-                Direct factory pricing on 100% genuine Sivakasi crackers. Flat 90% discount is always applied to all products in your order. Minimum order price to place an order is <strong className="text-white underline decoration-amber-300 decoration-2">₹3,000</strong>.
+                Direct factory pricing on 100% genuine Sivakasi crackers. Flat {discountPct}% discount is always applied to all products in your order. Minimum order price to place an order is <strong className="text-white underline decoration-amber-300 decoration-2">₹3,000</strong>.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full sm:w-auto">

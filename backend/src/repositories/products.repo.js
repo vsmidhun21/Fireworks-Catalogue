@@ -1,10 +1,14 @@
 import { db, nowIso } from "../config/db.js";
 import { CategoryRepo } from "./categories.repo.js";
+import { SettingsRepo } from "./estimates.repo.js";
+import { calcDiscountedPrice } from "../utils/pricing.js";
 
-function rowToProduct(r) {
+// discountedPrice is always derived from the original price and the global
+// discount percentage; the legacy products.discounted_price column is ignored.
+function rowToProduct(r, discountPercent) {
   if (!r) return null;
   const originalPrice = Number(r.original_price);
-  const discountedPrice = r.discounted_price != null ? Number(r.discounted_price) : Math.round(originalPrice * 0.10);
+  const discountedPrice = calcDiscountedPrice(originalPrice, discountPercent);
   return {
     id: r.id,
     categoryId: r.category_id,
@@ -98,34 +102,37 @@ export const ProductRepo = {
       ? await db.prepare(listSql).all(...params, Number(limit), Number(offset))
       : await db.prepare(listSql).all(...params);
 
-    const items = await Promise.all(rows.map(rowToProduct).map(withCategory));
+    const pct = await SettingsRepo.getGlobalDiscountPercent();
+    const items = await Promise.all(rows.map((r) => rowToProduct(r, pct)).map(withCategory));
     return { items, total };
   },
   async featured(limit = 8) {
     const rows = await db
       .prepare("SELECT * FROM products WHERE is_active = 1 AND is_featured = 1 ORDER BY sort_order ASC LIMIT ?")
       .all(Number(limit));
-    return await Promise.all(rows.map(rowToProduct).map(withCategory));
+    const pct = await SettingsRepo.getGlobalDiscountPercent();
+    return await Promise.all(rows.map((r) => rowToProduct(r, pct)).map(withCategory));
   },
   async findBySlug(slug, { activeOnly = true } = {}) {
     const sql = activeOnly ? "SELECT * FROM products WHERE slug = ? AND is_active = 1" : "SELECT * FROM products WHERE slug = ?";
     const row = await db.prepare(sql).get(slug);
-    return await withCategory(rowToProduct(row));
+    return await withCategory(rowToProduct(row, await SettingsRepo.getGlobalDiscountPercent()));
   },
   async findById(id, { withCat = false } = {}) {
     const row = await db.prepare("SELECT * FROM products WHERE id = ?").get(id);
-    const p = rowToProduct(row);
+    const p = rowToProduct(row, await SettingsRepo.getGlobalDiscountPercent());
     return withCat ? await withCategory(p) : p;
   },
   async findManyByIds(ids) {
     if (!ids.length) return [];
     const placeholders = ids.map(() => "?").join(",");
     const rows = await db.prepare(`SELECT * FROM products WHERE id IN (${placeholders}) AND is_active = 1`).all(...ids);
-    return rows.map(rowToProduct);
+    const pct = await SettingsRepo.getGlobalDiscountPercent();
+    return rows.map((r) => rowToProduct(r, pct));
   },
   async findByCode(code) {
     const row = await db.prepare("SELECT * FROM products WHERE product_code = ?").get(code);
-    return rowToProduct(row);
+    return rowToProduct(row, await SettingsRepo.getGlobalDiscountPercent());
   },
   async nextProductCode() {
     const row = await db
@@ -155,8 +162,8 @@ export const ProductRepo = {
       .prepare(
         `INSERT INTO products
          (category_id, product_code, name_en, name_ta, slug, description_en, description_ta, unit,
-          original_price, discounted_price, image_url, is_featured, is_new_arrival, sort_order, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+          original_price, image_url, is_featured, is_new_arrival, sort_order, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       )
       .run(
         p.categoryId,
@@ -168,7 +175,6 @@ export const ProductRepo = {
         p.descriptionTa || null,
         p.unit || "Box",
         p.originalPrice,
-        p.discountedPrice ?? null,
         p.imageUrl || null,
         p.isFeatured ? 1 : 0,
         p.isNewArrival ? 1 : 0,
@@ -192,7 +198,7 @@ export const ProductRepo = {
     }
     await db.prepare(
       `UPDATE products SET category_id=?, product_code=?, name_en=?, name_ta=?, description_en=?, description_ta=?,
-       unit=?, original_price=?, discounted_price=?, image_url=?, is_featured=?, is_new_arrival=?, sort_order=?, updated_at=?
+       unit=?, original_price=?, image_url=?, is_featured=?, is_new_arrival=?, sort_order=?, updated_at=?
        WHERE id=?`
     ).run(
       merged.categoryId,
@@ -203,7 +209,6 @@ export const ProductRepo = {
       merged.descriptionTa,
       merged.unit,
       merged.originalPrice,
-      merged.discountedPrice,
       merged.imageUrl,
       merged.isFeatured ? 1 : 0,
       merged.isNewArrival ? 1 : 0,
@@ -253,6 +258,7 @@ export const ProductRepo = {
       )
       .all();
 
+    const pct = await SettingsRepo.getGlobalDiscountPercent();
     const groups = [];
     for (const catRow of categoryRows) {
       const category = {
@@ -271,7 +277,7 @@ export const ProductRepo = {
         : "SELECT * FROM products WHERE category_id = ? ORDER BY id ASC";
       const productRows = await db.prepare(productSql).all(catRow.id);
       if (!productRows.length) continue;
-      const products = productRows.map(rowToProduct).map((p) => ({ ...p, category }));
+      const products = productRows.map((r) => rowToProduct(r, pct)).map((p) => ({ ...p, category }));
       groups.push({ category, products });
     }
     return groups;

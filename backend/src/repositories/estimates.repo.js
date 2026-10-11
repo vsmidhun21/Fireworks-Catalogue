@@ -1,5 +1,6 @@
 import { db, nowIso } from "../config/db.js";
 import { generateEstimateNumber } from "../utils/response.js";
+import { GLOBAL_DISCOUNT_SETTING_KEY, DEFAULT_GLOBAL_DISCOUNT_PERCENT, parseDiscountPercent } from "../utils/pricing.js";
 
 function rowToCustomer(r) {
   if (!r) return null;
@@ -47,6 +48,11 @@ async function rowToEstimate(r) {
     status: r.status,
     customerNotes: r.customer_notes,
     adminNotes: r.admin_notes,
+    // Per-estimate discount saved at creation (manual estimates). NULL for legacy /
+    // customer-submitted estimates, whose prices are frozen in their item snapshots.
+    discountPercent: r.discount_percent != null ? Number(r.discount_percent) : null,
+    source: r.source || "CUSTOMER",
+    isManual: r.source === "MANUAL",
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     customer: customerObj,
@@ -137,7 +143,10 @@ export const CustomerRepo = {
 };
 
 export const EstimateRepo = {
-  async createWithItems({ customerId, customerSnapshot, subtotal, totalDiscount, estimatedTotal, customerNotes, items }) {
+  async createWithItems({ customerId, customerSnapshot, subtotal, totalDiscount, estimatedTotal, customerNotes, items, discountPercent = null, source = "CUSTOMER" }) {
+    // New columns are only written for manual estimates, so the customer flow keeps
+    // working unchanged even before the migration has been applied.
+    const isManual = source === "MANUAL";
     const MAX_ATTEMPTS = 5;
     let lastError;
     const conn = await db.pool.getConnection();
@@ -147,29 +156,35 @@ export const EstimateRepo = {
         const estimateNumber = await generateUniqueEstimateNumber();
         await conn.beginTransaction();
         try {
+          const cols = [
+            "estimate_number", "customer_id", "subtotal", "total_discount", "estimated_total", "customer_notes",
+            "customer_name", "customer_phone", "customer_alternate_phone", "customer_email", "customer_address", "customer_city", "customer_state", "customer_pincode",
+            "updated_at",
+          ];
+          const vals = [
+            estimateNumber,
+            customerId,
+            subtotal,
+            totalDiscount,
+            estimatedTotal,
+            customerNotes || null,
+            customerSnapshot.name,
+            customerSnapshot.phone,
+            customerSnapshot.alternatePhone || null,
+            customerSnapshot.email || null,
+            customerSnapshot.address,
+            customerSnapshot.city,
+            customerSnapshot.state,
+            customerSnapshot.pincode,
+            nowIso(),
+          ];
+          if (isManual) {
+            cols.push("discount_percent", "source");
+            vals.push(discountPercent, "MANUAL");
+          }
           const [info] = await conn.query(
-            `INSERT INTO estimates
-             (estimate_number, customer_id, subtotal, total_discount, estimated_total, customer_notes,
-              customer_name, customer_phone, customer_alternate_phone, customer_email, customer_address, customer_city, customer_state, customer_pincode,
-              updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-            [
-              estimateNumber,
-              customerId,
-              subtotal,
-              totalDiscount,
-              estimatedTotal,
-              customerNotes || null,
-              customerSnapshot.name,
-              customerSnapshot.phone,
-              customerSnapshot.alternatePhone || null,
-              customerSnapshot.email || null,
-              customerSnapshot.address,
-              customerSnapshot.city,
-              customerSnapshot.state,
-              customerSnapshot.pincode,
-              nowIso(),
-            ]
+            `INSERT INTO estimates (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(",")})`,
+            vals
           );
           const estimateId = Number(info.insertId);
 
@@ -289,7 +304,16 @@ export const SettingsRepo = {
       }
       result[r.setting_key] = val;
     }
+    // Always expose the global discount as a validated number (default when unset/invalid).
+    result[GLOBAL_DISCOUNT_SETTING_KEY] =
+      parseDiscountPercent(result[GLOBAL_DISCOUNT_SETTING_KEY]) ?? DEFAULT_GLOBAL_DISCOUNT_PERCENT;
     return result;
+  },
+  async getGlobalDiscountPercent() {
+    const row = await db
+      .prepare("SELECT setting_value FROM website_settings WHERE setting_key = ?")
+      .get(GLOBAL_DISCOUNT_SETTING_KEY);
+    return parseDiscountPercent(row?.setting_value) ?? DEFAULT_GLOBAL_DISCOUNT_PERCENT;
   },
   async setMany(obj) {
     const conn = await db.pool.getConnection();
