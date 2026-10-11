@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CategoryService, ProductService, SettingsService } from "../services/api";
 import { DEFAULT_THEME } from "./theme";
-import { effectivePrice, historicalUnitPrice, globalDiscountPercent, formatPercent } from "./format";
+import { effectivePrice, historicalUnitPrice, globalDiscountPercent, formatPercent, calcDiscountedPrice } from "./format";
 
 // Real, embedded Unicode Tamil font (not the OS's fonts, not a canvas/image
 // rasterization) so Tamil category/product names render as genuine,
@@ -348,7 +348,14 @@ function buildTableRows(doc, groups, accentRgb, layout) {
 }
 
 export async function downloadPriceListPDF(options = {}) {
-  const { onProgress } = options;
+  const { onProgress, discountPercent: discountOverride } = options;
+  // Optional, per-download discount (admin price-list flow). Never persisted.
+  // When omitted, the PDF uses the saved global discount exactly as before.
+  const hasOverride = discountOverride !== undefined && discountOverride !== null;
+  const overridePct = hasOverride ? Number(discountOverride) : null;
+  if (hasOverride && !(Number.isFinite(overridePct) && overridePct >= 0 && overridePct <= 100)) {
+    throw new Error("PDF discount must be a number between 0 and 100");
+  }
 
   if (onProgress) onProgress(true);
 
@@ -368,7 +375,11 @@ export async function downloadPriceListPDF(options = {}) {
     ]);
 
     const categories = catRes.data || [];
-    const products = prodRes.data?.items || [];
+    const products = (prodRes.data?.items || []).map((product) =>
+      hasOverride
+        ? { ...product, discountedPrice: calcDiscountedPrice(product.originalPrice, overridePct) }
+        : product
+    );
     const settings = settingsRes.data || {};
     const logoImg = await loadImage(settings.logo_url || "/images/logo.png");
 
@@ -513,7 +524,7 @@ export async function downloadPriceListPDF(options = {}) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(...primaryRgb.map((c) => Math.round(c * 0.7)));
-      const summaryText = `${totalCategories} Categories  •  ${totalActiveProducts} Products  •  Flat ${formatPercent(globalDiscountPercent(settings))}% Discount  •  Min. Order Rs. 3,000`;
+      const summaryText = `${totalCategories} Categories  •  ${totalActiveProducts} Products  •  Flat ${formatPercent(hasOverride ? overridePct : globalDiscountPercent(settings))}% Discount  •  Min. Order Rs. 3,000`;
       doc.text(summaryText, pageWidth / 2, stripY + 5.6, { align: "center" });
     }
 

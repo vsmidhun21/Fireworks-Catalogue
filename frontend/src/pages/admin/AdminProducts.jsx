@@ -55,6 +55,28 @@ export default function AdminProducts() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfDiscountInput, setPdfDiscountInput] = useState("");
+  const [pdfDiscountError, setPdfDiscountError] = useState("");
+
+  function openPdfModal() {
+    // Pre-fill with the currently saved global discount; edits here are for this download only.
+    setPdfDiscountInput(String(discountPct));
+    setPdfDiscountError("");
+    setPdfModalOpen(true);
+  }
+
+  function handlePdfDownload() {
+    const raw = String(pdfDiscountInput).trim();
+    const value = Number(raw);
+    if (raw === "" || !Number.isFinite(value) || value < 0 || value > 100) {
+      setPdfDiscountError("Enter a number between 0 and 100.");
+      return;
+    }
+    setPdfModalOpen(false);
+    setDownloadingPdf(true);
+    downloadPriceListPDF({ discountPercent: value }).finally(() => setDownloadingPdf(false));
+  }
   const [error, setError] = useState("");
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const fileInputRef = useRef(null);
@@ -339,12 +361,58 @@ export default function AdminProducts() {
               Manage product catalogue, image uploads, and inventory ({total} total products)
             </p>
           </div>
+          {pdfModalOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setPdfModalOpen(false)}
+            >
+              <div
+                className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="font-display text-lg font-bold text-brand-navy">Price List PDF Discount</h2>
+                <p className="mt-1 text-sm text-brand-muted">
+                  Discount percentage to use for this PDF only. Saved settings are not changed.
+                </p>
+                <label className="mt-4 block text-sm font-semibold text-brand-navy mb-1" htmlFor="pdf_discount_percent">
+                  Discount Percentage (%)
+                </label>
+                <input
+                  id="pdf_discount_percent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  autoFocus
+                  value={pdfDiscountInput}
+                  onChange={(e) => {
+                    setPdfDiscountInput(e.target.value);
+                    setPdfDiscountError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handlePdfDownload()}
+                  className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+                />
+                {pdfDiscountError && <p className="mt-1 text-xs text-red-600">{pdfDiscountError}</p>}
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPdfModalOpen(false)}
+                    className="rounded-full border border-brand-border px-4 py-2 text-sm font-semibold text-brand-navy hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handlePdfDownload} className="btn-primary !py-2 !px-5 text-sm">
+                    Download
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2.5">
             <button
-              onClick={() => {
-                setDownloadingPdf(true);
-                downloadPriceListPDF().finally(() => setDownloadingPdf(false));
-              }}
+              onClick={openPdfModal}
               disabled={downloadingPdf}
               className="rounded-full border border-amber-400 bg-amber-50 text-amber-900 px-4 py-2 text-sm font-bold hover:bg-amber-100 transition-colors flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-60"
               title="Download latest price list PDF"
