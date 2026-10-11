@@ -5,6 +5,7 @@ import { CustomerRepo, EstimateRepo, SettingsRepo } from "../repositories/estima
 import { PromotionRepo } from "../repositories/promotions.repo.js";
 import { GiftBoxRepo } from "../repositories/giftBoxes.repo.js";
 import { ok, fail, slugify } from "../utils/response.js";
+import { GLOBAL_DISCOUNT_SETTING_KEY, parseDiscountPercent } from "../utils/pricing.js";
 import { requireAdmin } from "../middleware/auth.js";
 import {
   uploadProductImage,
@@ -236,7 +237,6 @@ router.post("/products", uploadProductImage.single("image"), async (req, res, ne
       descriptionTa: parseNullableText(b.descriptionTa),
       unit: b.unit || "Box",
       originalPrice: Number(b.originalPrice),
-      discountedPrice: parseNullableNumber(b.discountedPrice),
       imageUrl: getUploadedImageUrl(req) ?? parseNullableText(b.imageUrl) ?? null,
       isFeatured: parseBoolean(b.isFeatured),
       isNewArrival: parseBoolean(b.isNewArrival),
@@ -264,7 +264,6 @@ router.put("/products/:id", uploadProductImage.single("image"), async (req, res,
     if (b.descriptionTa !== undefined) fields.descriptionTa = parseNullableText(b.descriptionTa);
     if (b.unit != null) fields.unit = b.unit;
     if (b.originalPrice != null) fields.originalPrice = Number(b.originalPrice);
-    if (b.discountedPrice !== undefined) fields.discountedPrice = parseNullableNumber(b.discountedPrice);
     if (req.file) {
       fields.imageUrl = getUploadedImageUrl(req);
     }
@@ -559,7 +558,17 @@ router.get("/settings", async (req, res, next) => {
 
 router.put("/settings", async (req, res, next) => {
   try {
-    await SettingsRepo.setMany(req.body || {});
+    const body = { ...(req.body || {}) };
+    if (GLOBAL_DISCOUNT_SETTING_KEY in body) {
+      const pct = parseDiscountPercent(body[GLOBAL_DISCOUNT_SETTING_KEY]);
+      if (pct === null) {
+        return fail(res, "Global discount percentage must be a number between 0 and 100 (max 2 decimals)", 422, [
+          `${GLOBAL_DISCOUNT_SETTING_KEY} is invalid`,
+        ]);
+      }
+      body[GLOBAL_DISCOUNT_SETTING_KEY] = pct;
+    }
+    await SettingsRepo.setMany(body);
     ok(res, await SettingsRepo.getAll(), "Settings updated");
   } catch (e) {
     next(e);

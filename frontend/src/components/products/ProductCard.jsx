@@ -1,16 +1,18 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Plus, Minus, Check, Star } from "lucide-react";
-import { formatCurrency, discountPercent } from "../../utils/format";
+import { formatCurrency, effectivePrice, globalDiscountPercent, formatPercent } from "../../utils/format";
+import { useSettings } from "../../context/SettingsContext";
 import { useEstimate } from "../../context/EstimateContext";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 
 export default function ProductCard({ product }) {
   const { t, i18n } = useTranslation();
   const { addItem, updateQuantity, removeItem, items } = useEstimate();
-  const effectiveDiscountedPrice =
-    product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
-  const pct = discountPercent(product.originalPrice, effectiveDiscountedPrice);
+  const { settings } = useSettings();
+  const globalPct = globalDiscountPercent(settings);
+  const effectiveDiscountedPrice = effectivePrice(product, globalPct);
+  const pct = effectiveDiscountedPrice < product.originalPrice ? formatPercent(globalPct) : 0;
   const name = i18n.language === "ta" && product.nameTa ? product.nameTa : product.nameEn;
 
   const orderItem = items.find((i) => i.productId === product.id);

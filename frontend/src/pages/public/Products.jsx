@@ -5,12 +5,14 @@ import { Search } from "lucide-react";
 import { CategoryService, ProductService } from "../../services/api";
 import ProductCard from "../../components/products/ProductCard";
 import { LoadingGrid, EmptyState } from "../../components/common/States";
-import { catalogueDiscountSummary } from "../../utils/format";
+import { catalogueDiscountSummary, formatPercent } from "../../utils/format";
+import { useSettings } from "../../context/SettingsContext";
 
 const SKELETON_COUNT = 10;
 
 export default function Products() {
   const { t, i18n } = useTranslation();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
@@ -38,7 +40,7 @@ export default function Products() {
     () => (hasActiveFilters ? products : groups.flatMap((g) => g.products)),
     [hasActiveFilters, products, groups]
   );
-  const discountSummary = catalogueDiscountSummary(allVisibleProducts);
+  const discountSummary = catalogueDiscountSummary(allVisibleProducts, settings.global_discount_percent);
 
   useEffect(() => {
     CategoryService.list().then((res) => setCategories(res.data));
@@ -80,15 +82,15 @@ export default function Products() {
       <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border border-amber-300/80 flex items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
-            {discountSummary.pct}%
+            {formatPercent(discountSummary.pct)}%
           </div>
           <div>
             <p className="font-display font-bold text-brand-navy text-sm sm:text-base">
-              {t("home.catalogueNotice")}
+              {t("home.catalogueNotice", { pct: formatPercent(discountSummary.pct) })}
             </p>
             <p className="text-xs text-brand-muted">
               Select crackers directly at Sivakasi factory rates ·{" "}
-              {discountSummary.uniform ? `Flat ${discountSummary.pct}%` : `Up to ${discountSummary.pct}%`} discount is
+              {discountSummary.uniform ? `Flat ${formatPercent(discountSummary.pct)}%` : `Up to ${formatPercent(discountSummary.pct)}%`} discount is
               applied automatically in your order summary.
             </p>
           </div>

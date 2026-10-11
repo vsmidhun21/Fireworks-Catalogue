@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEstimate } from "../../context/EstimateContext";
-import { formatCurrency, discountPercent, effectivePrice } from "../../utils/format";
+import { formatCurrency, effectivePrice, formatPercent } from "../../utils/format";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 
 export default function Estimate() {
@@ -40,7 +40,7 @@ export default function Estimate() {
           </span>
           <div>
             <p className="font-display font-bold text-brand-navy text-sm sm:text-base">
-              {totals.discountPercent}% Festive Discount Applied on Your Order!
+              {formatPercent(totals.discountPercent)}% Festive Discount Applied on Your Order!
             </p>
             <p className="text-xs text-brand-muted">
               Minimum order required to place an order is <strong className="text-brand-navy">₹3,000</strong>.
@@ -78,7 +78,7 @@ export default function Estimate() {
           {items.map((item) => {
             const name = i18n.language === "ta" && item.nameTa ? item.nameTa : item.nameEn;
             const unitPrice = effectivePrice(item);
-            const itemPct = discountPercent(item.originalPrice, unitPrice);
+            const itemPct = unitPrice < item.originalPrice ? formatPercent(totals.discountPercent) : 0;
             return (
               <div key={item.productId} className="card-surface grid grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 p-3 rounded-xl border border-brand-border/80 shadow-sm sm:flex sm:gap-4 sm:p-4">
                 <div className="row-span-2 w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden border border-brand-border/50 sm:row-span-1">
@@ -168,7 +168,7 @@ export default function Estimate() {
           </div>
 
           <div className="flex justify-between text-sm text-emerald-600 mb-2 font-semibold">
-            <span>{t("estimate.discount90", { pct: totals.discountPercent })}</span>
+            <span>{t("estimate.discount90", { pct: formatPercent(totals.discountPercent) })}</span>
             <span>-{formatCurrency(totals.discount)}</span>
           </div>
 

@@ -1,5 +1,6 @@
 import { db, nowIso } from "../config/db.js";
 import { generateEstimateNumber } from "../utils/response.js";
+import { GLOBAL_DISCOUNT_SETTING_KEY, DEFAULT_GLOBAL_DISCOUNT_PERCENT, parseDiscountPercent } from "../utils/pricing.js";
 
 function rowToCustomer(r) {
   if (!r) return null;
@@ -289,7 +290,16 @@ export const SettingsRepo = {
       }
       result[r.setting_key] = val;
     }
+    // Always expose the global discount as a validated number (default when unset/invalid).
+    result[GLOBAL_DISCOUNT_SETTING_KEY] =
+      parseDiscountPercent(result[GLOBAL_DISCOUNT_SETTING_KEY]) ?? DEFAULT_GLOBAL_DISCOUNT_PERCENT;
     return result;
+  },
+  async getGlobalDiscountPercent() {
+    const row = await db
+      .prepare("SELECT setting_value FROM website_settings WHERE setting_key = ?")
+      .get(GLOBAL_DISCOUNT_SETTING_KEY);
+    return parseDiscountPercent(row?.setting_value) ?? DEFAULT_GLOBAL_DISCOUNT_PERCENT;
   },
   async setMany(obj) {
     const conn = await db.pool.getConnection();

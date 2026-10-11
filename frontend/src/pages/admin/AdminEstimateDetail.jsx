@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, User, Receipt, Loader2, Save, Printer } from "lucide-react";
 import { AdminEstimateService } from "../../services/api";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, historicalUnitPrice, totalsDiscountPercent } from "../../utils/format";
 import { downloadEstimatePDF } from "../../utils/pdfGenerator";
 
 const statuses = ["NEW", "CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
@@ -125,7 +125,7 @@ export default function AdminEstimateDetail() {
           </div>
           <dl className="text-sm space-y-2">
             <div className="flex justify-between"><dt className="text-brand-muted">Retail Subtotal (MRP)</dt><dd className="font-medium">{formatCurrency(estimate.subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-brand-muted">Festive Discount (90%)</dt><dd className="text-emerald-600 font-bold">-{formatCurrency(estimate.totalDiscount)}</dd></div>
+            <div className="flex justify-between"><dt className="text-brand-muted">Festive Discount ({totalsDiscountPercent(estimate.subtotal, estimate.totalDiscount)}%)</dt><dd className="text-emerald-600 font-bold">-{formatCurrency(estimate.totalDiscount)}</dd></div>
             <div className="flex justify-between font-bold text-brand-navy text-base border-t border-brand-border pt-2 mt-1">
               <dt>Estimated Total</dt><dd className="text-brand-primary-dark">{formatCurrency(estimate.estimatedTotal)}</dd>
             </div>
@@ -145,7 +145,7 @@ export default function AdminEstimateDetail() {
             <tr className="bg-slate-50 text-brand-muted border-b border-brand-border uppercase text-[11px] tracking-wider font-semibold">
               <th className="py-3 px-4">Product Item</th>
               <th className="py-3 px-4 text-center">Quantity</th>
-              <th className="py-3 px-4">Price (90% Off / MRP)</th>
+              <th className="py-3 px-4">Price (Discounted / MRP)</th>
               <th className="py-3 px-4 text-right">Line Total</th>
             </tr>
           </thead>
@@ -159,9 +159,9 @@ export default function AdminEstimateDetail() {
                 <td className="py-3 px-4 text-center font-semibold">{item.quantity}</td>
                 <td className="py-3 px-4">
                   <span className="font-bold text-brand-navy">
-                    {formatCurrency(item.discountedUnitPrice ?? Math.round(item.originalUnitPrice * 0.10))}
+                    {formatCurrency(historicalUnitPrice(item))}
                   </span>
-                  {item.originalUnitPrice > (item.discountedUnitPrice ?? 0) && (
+                  {item.originalUnitPrice > historicalUnitPrice(item) && (
                     <span className="text-xs text-slate-400 line-through ml-2">
                       {formatCurrency(item.originalUnitPrice)}
                     </span>

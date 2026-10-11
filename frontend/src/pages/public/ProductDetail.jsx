@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Minus, Plus, Check, MessageCircle, Search, ShieldCheck, ShoppingCart, Trash2 } from "lucide-react";
 import { ProductService } from "../../services/api";
-import { formatCurrency, discountPercent, whatsappLink } from "../../utils/format";
+import { formatCurrency, effectivePrice, globalDiscountPercent, formatPercent, whatsappLink } from "../../utils/format";
 import { useEstimate } from "../../context/EstimateContext";
 import { useSettings } from "../../context/SettingsContext";
 import { EmptyState } from "../../components/common/States";
@@ -45,9 +45,9 @@ export default function ProductDetail() {
 
   const name = i18n.language === "ta" && product.nameTa ? product.nameTa : product.nameEn;
   const description = i18n.language === "ta" && product.descriptionTa ? product.descriptionTa : product.descriptionEn;
-  const effectiveDiscountedPrice =
-    product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
-  const pct = discountPercent(product.originalPrice, effectiveDiscountedPrice);
+  const globalPct = globalDiscountPercent(settings);
+  const effectiveDiscountedPrice = effectivePrice(product, globalPct);
+  const pct = effectiveDiscountedPrice < product.originalPrice ? formatPercent(globalPct) : 0;
 
   const orderItem = items.find((i) => i.productId === product.id);
 
@@ -162,7 +162,7 @@ export default function ProductDetail() {
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  <span className="font-bold text-brand-navy text-lg">{formatCurrency((product.discountedPrice ?? product.originalPrice) * orderItem.quantity)}</span>
+                  <span className="font-bold text-brand-navy text-lg">{formatCurrency(effectiveDiscountedPrice * orderItem.quantity)}</span>
                 </div>
               </div>
             )}

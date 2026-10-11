@@ -1,7 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { ProductRepo } from "../repositories/products.repo.js";
-import { CustomerRepo, EstimateRepo } from "../repositories/estimates.repo.js";
+import { CustomerRepo, EstimateRepo, SettingsRepo } from "../repositories/estimates.repo.js";
 import { ok, fail } from "../utils/response.js";
 import { sendNewEstimateAdminEmail } from "../services/email.service.js";
 
@@ -54,6 +54,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
 
     // Re-validate every product server-side (never trust client price/quantity)
     const productIds = [...new Set(items.map((i) => Number(i.productId)))];
+    const discountPercent = await SettingsRepo.getGlobalDiscountPercent();
     const dbProducts = await ProductRepo.findManyByIds(productIds);
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
 
@@ -68,7 +69,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
         return fail(res, `Product ${item.productId} is unavailable`, 422);
       }
       const unitOriginal = product.originalPrice;
-      const unitDiscounted = product.discountedPrice != null ? product.discountedPrice : Math.round(unitOriginal * 0.10);
+      const unitDiscounted = product.discountedPrice; // derived from the current global discount
       const lineTotal = unitDiscounted * quantity;
 
       subtotal += unitOriginal * quantity;
@@ -136,7 +137,7 @@ router.post("/estimates", estimateLimiter, async (req, res, next) => {
       const maxRetries = 3;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          await sendNewEstimateAdminEmail(created);
+          await sendNewEstimateAdminEmail({ ...created, discountPercent });
           break;
         } catch (emailErr) {
           if (attempt === maxRetries) {

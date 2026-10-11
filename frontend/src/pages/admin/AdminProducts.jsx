@@ -17,7 +17,8 @@ import {
   FileDown,
 } from "lucide-react";
 import { AdminProductService, AdminCategoryService } from "../../services/api";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, calcDiscountedPrice, globalDiscountPercent, formatPercent } from "../../utils/format";
+import { useSettings } from "../../context/SettingsContext";
 import { getProductImageUrl, onImageError } from "../../utils/image";
 import { downloadPriceListPDF } from "../../utils/pdfGenerator";
 import Pagination from "../../components/common/Pagination";
@@ -30,7 +31,6 @@ const emptyForm = {
   descriptionTa: "",
   unit: "Box",
   originalPrice: "",
-  discountedPrice: "",
   imageUrl: "",
   imageFile: null,
   isFeatured: false,
@@ -39,6 +39,8 @@ const emptyForm = {
 };
 
 export default function AdminProducts() {
+  const { settings } = useSettings();
+  const discountPct = globalDiscountPercent(settings);
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -236,7 +238,6 @@ export default function AdminProducts() {
       descriptionTa: p.descriptionTa || "",
       unit: p.unit,
       originalPrice: p.originalPrice,
-      discountedPrice: p.discountedPrice ?? "",
       imageUrl: p.imageUrl || "",
       imageFile: null,
       isFeatured: p.isFeatured,
@@ -605,28 +606,26 @@ export default function AdminProducts() {
               step="0.01"
               placeholder="e.g. 150"
               value={form.originalPrice}
-              onChange={(e) => {
-                const val = e.target.value;
-                const num = parseFloat(val);
-                const autoDiscount = !isNaN(num) && num > 0 ? String(Math.round(num * 0.10)) : "";
-                setForm({ ...form, originalPrice: val, discountedPrice: autoDiscount });
-              }}
+              onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
               className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
             />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-brand-navy mb-1">
-              Offer Price / 90% Off (Rs.)
-              <span className="text-xs text-emerald-600 font-normal ml-1">(90% discount)</span>
+              Offer Price / {formatPercent(discountPct)}% Off (Rs.)
+              <span className="text-xs text-emerald-600 font-normal ml-1">(global discount, set in Settings)</span>
             </label>
             <input
-              type="number"
-              step="0.01"
-              placeholder="e.g. 15 (auto 90% off)"
-              value={form.discountedPrice}
-              onChange={(e) => setForm({ ...form, discountedPrice: e.target.value })}
-              className="w-full rounded-lg border border-brand-border px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+              type="text"
+              readOnly
+              tabIndex={-1}
+              value={
+                form.originalPrice !== "" && !isNaN(parseFloat(form.originalPrice))
+                  ? String(calcDiscountedPrice(parseFloat(form.originalPrice), discountPct))
+                  : ""
+              }
+              className="w-full rounded-lg border border-brand-border bg-slate-50 px-3 py-2 text-sm text-brand-muted cursor-not-allowed"
             />
           </div>
 
@@ -867,7 +866,7 @@ export default function AdminProducts() {
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <div className="font-semibold text-brand-navy">
-                            {formatCurrency(p.discountedPrice != null ? p.discountedPrice : Math.round(p.originalPrice * 0.10))}
+                            {formatCurrency(p.discountedPrice)}
                           </div>
                           <div className="text-xs text-brand-muted line-through">
                             {formatCurrency(p.originalPrice)}

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { SettingsService } from "../services/api";
 import { applyTheme, applySiteMeta, DEFAULT_THEME } from "../utils/theme";
+import { DEFAULT_GLOBAL_DISCOUNT_PERCENT, globalDiscountPercent, formatPercent } from "../utils/format";
 
 const SettingsContext = createContext({
   settings: {},
@@ -9,13 +10,15 @@ const SettingsContext = createContext({
   updateSettings: () => {},
 });
 
-export const DEFAULT_TICKER_ITEMS = [
+export function buildDefaultTickerItems(pct = DEFAULT_GLOBAL_DISCOUNT_PERCENT) {
+  const p = formatPercent(globalDiscountPercent({ global_discount_percent: pct }));
+  return [
   {
     id: "ticker-1",
-    highlight_text: "MEGA 90% DISCOUNT",
+    highlight_text: `MEGA ${p}% DISCOUNT`,
     highlight_color: "#fbbf24",
     highlight_text_color: "#020617",
-    message_text: "Flat 90% Discount Always Applicable on All Sivakasi Crackers!",
+    message_text: `Flat ${p}% Discount Always Applicable on All Sivakasi Crackers!`,
     is_active: true,
   },
   {
@@ -50,7 +53,10 @@ export const DEFAULT_TICKER_ITEMS = [
     message_text: "Helpline: +91 87540 66248 | +91 88257 21391",
     is_active: true,
   },
-];
+  ];
+}
+
+export const DEFAULT_TICKER_ITEMS = buildDefaultTickerItems();
 
 const FALLBACK = {
   business_name: "RR Crackers",
@@ -68,6 +74,7 @@ const FALLBACK = {
   youtube_url: "",
   announcement_text: "",
   header_ticker_items: DEFAULT_TICKER_ITEMS,
+  global_discount_percent: DEFAULT_GLOBAL_DISCOUNT_PERCENT,
   ...DEFAULT_THEME,
 };
 
@@ -80,12 +87,14 @@ function normalizeSettings(data = {}) {
       tickerItems = null;
     }
   }
+  const globalDiscount = globalDiscountPercent(data);
   if (!Array.isArray(tickerItems) || tickerItems.length === 0) {
-    tickerItems = DEFAULT_TICKER_ITEMS;
+    tickerItems = buildDefaultTickerItems(globalDiscount);
   }
   return {
     ...FALLBACK,
     ...data,
+    global_discount_percent: globalDiscount,
     header_ticker_items: tickerItems,
   };
 }

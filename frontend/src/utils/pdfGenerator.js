@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CategoryService, ProductService, SettingsService } from "../services/api";
 import { DEFAULT_THEME } from "./theme";
+import { effectivePrice, historicalUnitPrice, globalDiscountPercent, formatPercent } from "./format";
 
 // Real, embedded Unicode Tamil font (not the OS's fonts, not a canvas/image
 // rasterization) so Tamil category/product names render as genuine,
@@ -326,7 +327,7 @@ function buildTableRows(doc, groups, accentRgb, layout) {
     simulateAdvance(bandHeight);
 
     group.items.forEach((product) => {
-      const discPrice = product.discountedPrice != null ? product.discountedPrice : Math.round(product.originalPrice * 0.10);
+      const discPrice = effectivePrice(product); // discountedPrice is supplied by the API from the global discount
       const hasDiscount = discPrice < product.originalPrice;
       rows.push([
         product.productCode || "-",
@@ -512,7 +513,7 @@ export async function downloadPriceListPDF(options = {}) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(...primaryRgb.map((c) => Math.round(c * 0.7)));
-      const summaryText = `${totalCategories} Categories  •  ${totalActiveProducts} Products  •  Flat 90% Discount  •  Min. Order Rs. 3,000`;
+      const summaryText = `${totalCategories} Categories  •  ${totalActiveProducts} Products  •  Flat ${formatPercent(globalDiscountPercent(settings))}% Discount  •  Min. Order Rs. 3,000`;
       doc.text(summaryText, pageWidth / 2, stripY + 5.6, { align: "center" });
     }
 
@@ -687,7 +688,7 @@ export function downloadEstimatePDF(estimate) {
       item.productCode || "-",
       `${item.productNameEn || "-"}${item.unit ? ` (${item.unit})` : ""}`,
       String(item.quantity ?? "-"),
-      `Rs. ${Number(item.discountedUnitPrice ?? Math.round(Number(item.originalUnitPrice || 0) * 0.10)).toLocaleString("en-IN")}`,
+      `Rs. ${Number(historicalUnitPrice(item)).toLocaleString("en-IN")}`,
       `Rs. ${Number(item.lineTotal || 0).toLocaleString("en-IN")}`,
     ]),
     theme: "grid",
